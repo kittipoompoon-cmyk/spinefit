@@ -2219,6 +2219,26 @@ function build3DModelImpl(spinePts, backPts, method){
   }
 
   // ----------------------------------------------------------------
+  // Helper: rounded-rectangle THREE.Shape (used for the seat cushion
+  // footprint) — corners drawn with absarc so the extrusion below can
+  // bevel them into a soft, cushion-like edge instead of a hard box.
+  // ----------------------------------------------------------------
+  function roundedRectShape(w, d, r){
+    const x0=-w/2, x1=w/2, y0=0, y1=d;
+    const s = new THREE.Shape();
+    s.moveTo(x0+r, y0);
+    s.lineTo(x1-r, y0);
+    s.absarc(x1-r, y0+r, r, -Math.PI/2, 0, false);
+    s.lineTo(x1, y1-r);
+    s.absarc(x1-r, y1-r, r, 0, Math.PI/2, false);
+    s.lineTo(x0+r, y1);
+    s.absarc(x0+r, y1-r, r, Math.PI/2, Math.PI, false);
+    s.lineTo(x0, y0+r);
+    s.absarc(x0+r, y0+r, r, Math.PI, 1.5*Math.PI, false);
+    return s;
+  }
+
+  // ----------------------------------------------------------------
   // 1. FRONT FACE — the S-curve surface the spine rests against
   //    Spans X = [-padW/2, padW/2], Y = [0, yMax], Z = backFn(y) per height
   //    Slight horizontal bow so it looks cushiony (not perfectly flat in X)
@@ -2402,13 +2422,39 @@ function build3DModelImpl(spinePts, backPts, method){
   }
 
   // ----------------------------------------------------------------
-  // 7. SHADOW PLANE
+  // 7. SEAT CUSHION — the reference book's render shows a full L-shaped
+  //    chair (seat + backrest), not the backrest alone, so a seat pan
+  //    is added here purely for visual completeness. It carries no
+  //    interpolation math of its own — its footprint just extends
+  //    forward from the backrest's base (y=0) in the same +Z direction
+  //    the backrest bulges toward the sitter.
+  // ----------------------------------------------------------------
+  const seatThick = 5.0;
+  const seatDepth = Math.max(16, padW*0.85);
+  let seatZStart = 0, seatZEnd = 0;
+  {
+    const seatR = Math.min(padW, seatDepth) * 0.12;
+    const seatShape = roundedRectShape(padW, seatDepth, seatR);
+    const seatGeo = new THREE.ExtrudeGeometry(seatShape, {
+      depth: seatThick, bevelEnabled:true, bevelThickness:0.9, bevelSize:0.9,
+      bevelSegments:5, steps:1, curveSegments:16
+    });
+    const seatMesh = new THREE.Mesh(seatGeo, mat);
+    seatMesh.rotation.x = Math.PI/2; // extrude downward (local +Z -> world -Y); local (x,y) -> world (x,z)
+    seatZStart = profile[0].zFront - thick*0.5; // tuck back edge under the backrest base for a seamless joint
+    seatMesh.position.set(0, 0, seatZStart);
+    seatZEnd = seatZStart + seatDepth;
+    group.add(seatMesh);
+  }
+
+  // ----------------------------------------------------------------
+  // 8. SHADOW PLANE
   // ----------------------------------------------------------------
   {
     const aoM=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.07});
-    const ao=new THREE.Mesh(new THREE.PlaneGeometry(padW+6, padW*0.7), aoM);
+    const ao=new THREE.Mesh(new THREE.PlaneGeometry(padW+6, seatDepth+padW*0.3), aoM);
     ao.rotation.x=-Math.PI/2;
-    ao.position.set(0, -0.8, profile[0].zFront - thick/2);
+    ao.position.set(0, -seatThick-0.8, (seatZStart+seatZEnd)/2);
     group.add(ao);
   }
 
@@ -2423,8 +2469,8 @@ function build3DModelImpl(spinePts, backPts, method){
   //   Z=zBack(y)  = flat offset (left on screen) ✓
   // ----------------------------------------------------------------
   group.rotation.y = 0;
-  const camDist = Math.max(55, yMax*2.2);
-  const camY    = yMax * 0.45;
+  const camDist = Math.max(60, (yMax+seatDepth)*1.9);
+  const camY    = (yMax - seatThick) * 0.42;
   camera.position.set(camDist, camY, 2);
   camera.lookAt(0, camY, profile[NH/2|0].zFront - thick/2);
 
