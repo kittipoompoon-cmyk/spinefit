@@ -251,6 +251,15 @@ h1,h2,h3,.display{
   .assess-entry-btn{ width:100%; justify-content:center; }
 }
 
+.math-entry-banner{
+  background:#F3F1EC;
+  border-color:rgba(26,35,50,0.18);
+  margin-top:16px;
+}
+.math-entry-icon{ border-color:rgba(26,35,50,0.18); }
+.math-entry-banner .assess-entry-btn{ border-color:rgba(26,35,50,0.3); color:var(--navy); }
+.math-entry-banner .assess-entry-btn:hover{ background:rgba(26,35,50,0.06); border-color:var(--navy); }
+
 .mode-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -949,6 +958,45 @@ footer{
   outline: 2px solid var(--terracotta);
   outline-offset: 2px;
 }
+
+/* ---------- MATH PRESENTATION MODE ---------- */
+.math-section{
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:22px; margin-top:20px;
+}
+.math-section h3{
+  font-size:14px; font-family:'JetBrains Mono', monospace; text-transform:uppercase;
+  letter-spacing:0.04em; color:var(--navy); margin-bottom:14px;
+}
+.lagrange-step{
+  border-bottom:1px dashed var(--line-strong);
+  padding:14px 0; font-size:13px;
+}
+.lagrange-step:last-child{ border-bottom:none; }
+.lagrange-step-head{
+  font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--terracotta);
+  margin-bottom:6px; font-size:13.5px;
+}
+.lagrange-step-line{
+  font-family:'JetBrains Mono', monospace; color:#4a4f57; line-height:1.9;
+  overflow-wrap:anywhere; padding-left:8px;
+}
+.verify-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.verify-table th{
+  font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase;
+  letter-spacing:0.04em; color:#9aa0a8; text-align:left; padding:6px 8px;
+  border-bottom:1.5px solid var(--line-strong);
+}
+.verify-table td{ padding:7px 8px; font-family:'JetBrains Mono', monospace; border-bottom:1px solid var(--line); }
+.verify-ok{ color:#2E8B57; font-weight:700; }
+
+@media print{
+  .topbar, .nav-row, .assess-entry-banner, .math-entry-banner, .mode-grid,
+  .pill-row, #mathPresetSelector, .field-group label, .helper{ display:none !important; }
+  #mathOutput, #pageMath .page-header{ display:block !important; }
+  body{ background:white; }
+  .math-section{ break-inside:avoid; border:1px solid #ccc; }
+}
 </style>
 </head>
 <body>
@@ -1010,6 +1058,17 @@ footer{
         <p>เช็กอาการคอ บ่า หลังบน หลังล่าง ใน 7 วันที่ผ่านมา — ไม่ใช่เครื่องมือวินิจฉัยโรค</p>
       </div>
       <button class="btn btn-ghost btn-sm assess-entry-btn" id="goToAssessBtn">เริ่มประเมิน →</button>
+    </div>
+
+    <div class="assess-entry-banner math-entry-banner" id="mathEntryBanner">
+      <div class="assess-entry-icon math-entry-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="1.8"><path d="M4 4h16v4H4z"/><path d="M6 12h.01M6 16h.01M10 12h4M10 16h4M17 12l2 2-2 2"/></svg>
+      </div>
+      <div class="assess-entry-text">
+        <h3>โหมดคำนวณสมการ</h3>
+        <p>แสดงขั้นตอน Lagrange Interpolation แบบละเอียด พร้อมตารางตรวจสอบ — สำหรับนำเสนอโครงงานคณิตศาสตร์</p>
+      </div>
+      <button class="btn btn-ghost btn-sm assess-entry-btn" id="goToMathBtn">เปิดโหมดคำนวณ →</button>
     </div>
 
     <div class="mode-grid">
@@ -1090,6 +1149,40 @@ footer{
 
     <div class="nav-row">
       <button class="btn btn-ghost" id="backFromAssess">← กลับหน้าแรก</button>
+    </div>
+  </div>
+
+  <!-- ================= PAGE MATH: Equation calculation mode ================= -->
+  <div class="page" id="pageMath">
+    <div class="page-header">
+      <div class="section-title"><span class="num">Σ</span> โหมดคำนวณสมการ</div>
+      <h2>ขั้นตอนการสร้างสมการพหุนามแบบละเอียด</h2>
+      <p>สำหรับใช้ประกอบการนำเสนอโครงงานคณิตศาสตร์ — แสดงการแทนค่า Lagrange Interpolation ทีละขั้นตอน พร้อมตารางตรวจสอบความถูกต้อง</p>
+    </div>
+
+    <div class="panel">
+      <div class="field-group" style="margin-bottom:14px;">
+        <label>เลือกข้อมูลจุดพิกัด</label>
+        <div class="pill-row" id="mathSourcePills">
+          <div class="pill active" data-src="preset" role="button" tabindex="0" aria-pressed="true">ข้อมูลมาตรฐาน</div>
+          <div class="pill" data-src="custom" role="button" tabindex="0" aria-pressed="false">ค่าที่กรอกเอง (ถ้ามี)</div>
+        </div>
+      </div>
+      <div class="field-group" id="mathPresetSelector">
+        <div class="pill-row" id="mathSexPills">
+          <div class="pill active" data-val="male" role="button" tabindex="0" aria-pressed="true">ชาย</div>
+          <div class="pill" data-val="female" role="button" tabindex="0" aria-pressed="false">หญิง</div>
+        </div>
+        <div class="pill-row" id="mathAgePills" style="margin-top:8px;"></div>
+      </div>
+      <div class="helper" id="mathCustomNote" style="display:none;">ใช้ค่าพิกัด 6 จุดล่าสุดที่กรอกไว้ในโหมด "กรอกพิกัดเอง"</div>
+    </div>
+
+    <div id="mathOutput"><!-- injected by JS --></div>
+
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="backFromMath">← กลับหน้าแรก</button>
+      <button class="btn btn-primary" id="printMathBtn">พิมพ์ / บันทึกเป็น PDF ↓</button>
     </div>
   </div>
 
@@ -1502,11 +1595,13 @@ let state = {
    ============================================================ */
 const pages = [document.getElementById('page0'), document.getElementById('page1'), document.getElementById('page2')];
 const pageAssessEl = document.getElementById('pageAssess');
+const pageMathEl = document.getElementById('pageMath');
 const stepEls = document.querySelectorAll('.step');
 
 function goToStep(n){
   state.curStep = n;
   pageAssessEl.classList.remove('active');
+  pageMathEl.classList.remove('active');
   pages.forEach((p,i)=> p.classList.toggle('active', i===n));
   stepEls.forEach((s,i)=>{
     s.classList.remove('active','done');
@@ -1518,13 +1613,26 @@ function goToStep(n){
 
 function showAssessPage(){
   pages.forEach(p=>p.classList.remove('active'));
+  pageMathEl.classList.remove('active');
   pageAssessEl.classList.add('active');
   stepEls.forEach(s=>s.classList.remove('active','done'));
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+function showMathPage(){
+  pages.forEach(p=>p.classList.remove('active'));
+  pageAssessEl.classList.remove('active');
+  pageMathEl.classList.add('active');
+  stepEls.forEach(s=>s.classList.remove('active','done'));
+  window.scrollTo({top:0, behavior:'smooth'});
+  renderMathMode();
+}
+
 document.getElementById('goToAssessBtn').addEventListener('click', showAssessPage);
 document.getElementById('backFromAssess').addEventListener('click', ()=>goToStep(0));
+document.getElementById('goToMathBtn').addEventListener('click', showMathPage);
+document.getElementById('backFromMath').addEventListener('click', ()=>goToStep(0));
+document.getElementById('printMathBtn').addEventListener('click', ()=>window.print());
 
 document.getElementById('backTo0').addEventListener('click', ()=>goToStep(0));
 document.getElementById('backTo1').addEventListener('click', ()=>goToStep(1));
@@ -2854,6 +2962,151 @@ renderAssessmentRedFlags();
 const formDateEl = document.getElementById('formDateField');
 if(formDateEl) formDateEl.innerHTML = `<b>${formatThaiDate()}</b>`;
 
+
+/* ============================================================
+   MATH PRESENTATION MODE
+   Renders the Lagrange interpolation derivation step-by-step (each
+   basis polynomial L_i(y) with actual node values substituted in),
+   plus a verification table proving the resulting polynomial passes
+   back through every input point — the kind of worked derivation a
+   math-project defense/presentation needs, distinct from the
+   product-design framing of the results page.
+   ============================================================ */
+let mathState = { source:'preset', sex:'male', age:'19-29' };
+
+function mathPointsFromSource(){
+  if(mathState.source === 'custom') return state.points || null;
+  return PRESETS[mathState.age][mathState.sex];
+}
+
+function renderMathSelectors(){
+  const ageContainer = document.getElementById('mathAgePills');
+  ageContainer.innerHTML = Object.keys(AGE_LABELS).map(k=>
+    `<div class="pill ${k===mathState.age?'active':''}" data-val="${k}" role="button" tabindex="0" aria-pressed="${k===mathState.age}">${AGE_LABELS[k]}</div>`
+  ).join('');
+  ageContainer.querySelectorAll('.pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      ageContainer.querySelectorAll('.pill').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
+      p.classList.add('active'); p.setAttribute('aria-pressed','true');
+      mathState.age = p.dataset.val;
+      renderMathMode();
+    });
+  });
+
+  document.querySelectorAll('#mathSexPills .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#mathSexPills .pill').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
+      p.classList.add('active'); p.setAttribute('aria-pressed','true');
+      mathState.sex = p.dataset.val;
+      renderMathMode();
+    });
+  });
+
+  document.querySelectorAll('#mathSourcePills .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#mathSourcePills .pill').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
+      p.classList.add('active'); p.setAttribute('aria-pressed','true');
+      mathState.source = p.dataset.src;
+      document.getElementById('mathPresetSelector').style.display = mathState.source==='custom' ? 'none' : '';
+      document.getElementById('mathCustomNote').style.display = mathState.source==='custom' ? '' : 'none';
+      renderMathMode();
+    });
+  });
+}
+
+/* Builds the L_i(y) = Π(y−y_j)/Π(y_i−y_j) derivation for one node,
+   with actual y_j values substituted into both products. */
+function buildLagrangeStepHTML(points, i){
+  const n = points.length;
+  const yi = points[i][0], xi = points[i][1];
+  const numParts = [], denomParts = [];
+  let denomVal = 1;
+  for(let j=0;j<n;j++){
+    if(j===i) continue;
+    const yj = points[j][0];
+    numParts.push(`(y − ${fmtSci(yj)})`);
+    denomParts.push(`(${fmtSci(yi)} − ${fmtSci(yj)})`);
+    denomVal *= (yi - yj);
+  }
+  return `
+    <div class="lagrange-step">
+      <div class="lagrange-step-head">L<sub>${i+1}</sub>(y) — จุดที่ ${i+1} (y<sub>${i+1}</sub> = ${fmtSci(yi)}, x<sub>${i+1}</sub> = ${fmtSci(xi)})</div>
+      <div class="lagrange-step-line">L<sub>${i+1}</sub>(y) = ${numParts.join('')}</div>
+      <div class="lagrange-step-line">${' '.repeat(10)}÷ [${denomParts.join(' × ')}]</div>
+      <div class="lagrange-step-line">${' '.repeat(10)}= ${numParts.join('')} ÷ (${fmtSci(denomVal)})</div>
+      <div class="lagrange-step-line">x<sub>${i+1}</sub> · L<sub>${i+1}</sub>(y)  →  สัมประสิทธิ์ ${fmtSci(xi)} คูณกับพจน์นี้</div>
+    </div>`;
+}
+
+function renderVerificationTableHTML(points){
+  const fn = lagrangeCoeffs(points);
+  const rows = points.map((p,i)=>{
+    const [y,x] = p;
+    const computed = fn(y);
+    const ok = Math.abs(computed - x) < 1e-6;
+    return `<tr>
+      <td>${i+1}</td><td>${fmtSci(y)}</td><td>${fmtSci(x)}</td><td>${fmtSci(computed)}</td>
+      <td class="${ok?'verify-ok':''}">${ok?'✓ ตรงกัน':'ไม่ตรงกัน'}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <table class="verify-table">
+      <tr><th>#</th><th>y (Distance)</th><th>x เดิม</th><th>P(y) คำนวณได้</th><th>ผล</th></tr>
+      ${rows}
+    </table>`;
+}
+
+function renderMathMode(){
+  document.getElementById('mathPresetSelector').style.display = mathState.source==='custom' ? 'none' : '';
+  document.getElementById('mathCustomNote').style.display = mathState.source==='custom' ? '' : 'none';
+
+  const points = mathPointsFromSource();
+  const out = document.getElementById('mathOutput');
+  if(!points){
+    out.innerHTML = `<div class="math-section">ยังไม่มีค่าที่กรอกเอง — สลับไปที่ "ข้อมูลมาตรฐาน" หรือกลับไปกรอกพิกัดในโหมด "กรอกพิกัดเอง" ก่อน</div>`;
+    return;
+  }
+
+  const coeffs = lagrangeSymbolic(points);
+  const stepsHTML = points.map((_,i)=>buildLagrangeStepHTML(points,i)).join('');
+  const rungeWarnings = detectRunge(points);
+
+  out.innerHTML = `
+    <div class="math-section">
+      <h3>1. จุดพิกัดอ้างอิง (n = ${points.length})</h3>
+      <table class="point-table">
+        <tr><th>#</th><th>Distance (Y)</th><th>Depth (X)</th></tr>
+        ${points.map((p,i)=>`<tr><td>${i+1}</td><td>${fmtSci(p[0])}</td><td>${fmtSci(p[1])}</td></tr>`).join('')}
+      </table>
+    </div>
+
+    <div class="math-section">
+      <h3>2. การสร้างพหุนามลากรานจ์ (Lagrange Interpolation) — P(y) = Σ xᵢ·Lᵢ(y)</h3>
+      ${stepsHTML}
+    </div>
+
+    <div class="equation-card math-section" style="background:var(--navy);">
+      <h3 style="color:white; opacity:0.7;">3. สมการพหุนามที่ได้ (ดีกรี ${points.length-1})</h3>
+      <div class="eq">${equationString(coeffs, 'x(y)')}</div>
+    </div>
+
+    <div class="math-section">
+      <h3>4. ตารางตรวจสอบความถูกต้อง (แทนค่า y แต่ละจุดกลับเข้าสมการ)</h3>
+      ${renderVerificationTableHTML(points)}
+      <div class="helper" style="margin-top:10px;">
+        ถ้า P(y) คำนวณได้ตรงกับค่า x เดิมทุกจุด แสดงว่าพหุนามที่ได้ผ่านจุดพิกัดทั้งหมดจริงตามคุณสมบัติของ Interpolation
+      </div>
+    </div>
+
+    <div class="math-section">
+      <h3>5. กราฟเส้นโค้ง</h3>
+      <svg viewBox="0 0 320 340" style="width:100%;max-width:340px;">${renderCurveSVG(points, null, 320, 340)}</svg>
+      ${rungeWarnings.length ? `<div class="helper" style="color:#E8654F;margin-top:8px;">⚠ พบสัญญาณ Runge's Phenomenon ในช่วงพิกัดที่ ${rungeWarnings.map(w=>w.segment+1).join(', ')}</div>` : ''}
+    </div>
+  `;
+}
+
+renderMathSelectors();
 
 function renderHero(){
   const pts = PRESETS["19-29"].male;
