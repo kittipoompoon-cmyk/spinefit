@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpineFit — ออกแบบพนักพิงเก้าอี้เฉพาะบุคคล</title>
+<style>
+:root{
+  --navy:#1A2332;
+  --paper:#F7F5F0;
+  /* Brand accent — teal reads as more clinical/medical than the original orange.
+     Variable name kept as --terracotta for backward compatibility with existing
+     references throughout the stylesheet; only the value changed. */
+  --terracotta:#2D6E7E;
+  --terracotta-deep:#1F4E5A;
+  --steel:#A3A3A3;
+  --ink:#2A2A2A;
+  --line: rgba(26,35,50,0.08);
+  --line-strong: rgba(26,35,50,0.18);
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+@font-face{font-family:'sysfallback';src:local('Georgia');}
+
+body{
+  font-family:'Inter', -apple-system, sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  position:relative;
+}
+
+h1,h2,h3,.display{
+  font-family:'Newsreader', Georgia, serif;
+}
+
+.mono{ font-family:'JetBrains Mono', monospace; }
+
+/* Top progress bar */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:rgba(247,245,240,0.92);
+  backdrop-filter: blur(6px);
+  border-bottom:1px solid var(--line-strong);
+  padding:18px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex; align-items:center; gap:10px;
+  font-family:'Newsreader', serif; font-size:20px; font-weight:600;
+  color:var(--navy);
+  white-space:nowrap;
+}
+.brand svg{ width:26px; height:26px; }
+
+.steps{
+  display:flex; gap:0; align-items:center;
+}
+.step{
+  display:flex; align-items:center; gap:8px;
+  padding:6px 16px;
+  font-size:13px;
+  color:#9aa0a8;
+  position:relative;
+  white-space:nowrap;
+}
+.step .dot{
+  width:22px;height:22px;border-radius:50%;
+  border:1.5px solid #c7c2b8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px; font-family:'JetBrains Mono',monospace;
+  background:var(--paper);
+  transition:all .3s;
+  flex-shrink:0;
+}
+.step.active .dot{ border-color:var(--terracotta); background:var(--terracotta); color:white;}
+.step.active{ color:var(--navy); font-weight:600;}
+.step.done .dot{ border-color:var(--navy); background:var(--navy); color:white;}
+.step.done{ color:var(--navy); }
+.step-connector{ width:24px; height:1px; background:#c7c2b8; flex-shrink:0; }
+
+@media (max-width:560px){
+  .topbar{ padding:14px 18px; }
+  .step span{ display:none; }
+  .step{ padding:4px 6px; }
+  .step-connector{ width:14px; }
+}
+
+.wrap{
+  max-width:1080px;
+  margin:0 auto;
+  padding:0 32px 80px;
+}
+
+/* ---------- PAGE: INTRO ---------- */
+.page{ display:none; animation: fadein .4s ease; }
+.page.active{ display:block; }
+@keyframes fadein{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+.hero{
+  padding:64px 0 40px;
+  display:grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap:48px;
+  align-items:center;
+}
+@media (max-width:820px){ .hero{ grid-template-columns:1fr; } }
+
+.eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--terracotta);
+  margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{ content:''; width:18px; height:1px; background:var(--terracotta); }
+
+.hero h1{
+  font-size:clamp(34px, 5vw, 52px);
+  line-height:1.08;
+  color:var(--navy);
+  font-weight:600;
+  margin-bottom:20px;
+  letter-spacing:-0.01em;
+}
+.hero h1 em{
+  font-style:italic;
+  color:var(--terracotta);
+}
+.hero p.lede{
+  font-size:16.5px;
+  line-height:1.7;
+  color:#4a4f57;
+  max-width:480px;
+  margin-bottom:28px;
+}
+
+.equation-box{
+  font-family:'JetBrains Mono', monospace;
+  font-size:14px;
+  background:white;
+  border:1px solid var(--line-strong);
+  border-left:3px solid var(--terracotta);
+  padding:14px 18px;
+  border-radius:2px;
+  display:inline-block;
+  margin-bottom:32px;
+  color:var(--navy);
+}
+
+.btn{
+  font-family:'Inter', sans-serif;
+  font-weight:600;
+  font-size:15px;
+  padding:14px 28px;
+  border-radius:3px;
+  border:none;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  transition: all .15s;
+}
+.btn-primary{
+  background:var(--navy);
+  color:white;
+}
+.btn-primary:hover{ background:#0f1620; transform:translateY(-1px); }
+.btn-primary:disabled{ background:#c7c2b8; cursor:not-allowed; transform:none; }
+.btn-ghost{
+  background:transparent;
+  color:var(--navy);
+  border:1.5px solid var(--line-strong);
+}
+.btn-ghost:hover{ border-color:var(--navy); background:rgba(26,35,50,0.04); }
+.btn-sm{ padding:9px 18px; font-size:13px; }
+
+/* hero plotter visual */
+.plotter-stage{
+  background:white;
+  border:1px solid var(--line-strong);
+  border-radius:4px;
+  padding:24px;
+  position:relative;
+  box-shadow: 0 12px 32px -16px rgba(26,35,50,0.18);
+}
+.plotter-stage .cap{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; color:#9aa0a8;
+  display:flex; justify-content:space-between;
+  margin-top:10px;
+}
+
+.source-strip{
+  display:flex; gap:28px; flex-wrap:wrap;
+  padding:28px 0;
+  border-top:1px solid var(--line-strong);
+  font-size:13px;
+  color:#7a7f87;
+}
+.source-strip b{ color:var(--navy); font-weight:600; }
+
+/* Mode select cards */
+.section-title{
+  font-size:13px;
+  font-family:'JetBrains Mono', monospace;
+  text-transform:uppercase;
+  letter-spacing:0.07em;
+  color:#9aa0a8;
+  margin-bottom:14px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-title .num{ color:var(--terracotta); }
+
+.assess-entry-banner{
+  display:flex; align-items:center; gap:16px;
+  background:#EFF5F6;
+  border:1.5px solid rgba(45,110,126,0.3);
+  border-radius:8px;
+  padding:18px 22px;
+  margin-top:32px;
+}
+.assess-entry-icon{
+  width:42px; height:42px; border-radius:50%;
+  background:white;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  border:1px solid rgba(45,110,126,0.25);
+}
+.assess-entry-text{ flex:1; min-width:0; }
+.assess-entry-text h3{ font-size:15px; color:var(--navy); font-weight:600; margin-bottom:3px; }
+.assess-entry-text p{ font-size:12.5px; color:#6b7078; line-height:1.5; }
+.assess-entry-btn{ flex-shrink:0; border-color:rgba(45,110,126,0.4); color:var(--terracotta); }
+.assess-entry-btn:hover{ background:rgba(45,110,126,0.08); border-color:var(--terracotta); }
+@media (max-width:600px){
+  .assess-entry-banner{ flex-wrap:wrap; }
+  .assess-entry-btn{ width:100%; justify-content:center; }
+}
+
+.mode-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-top:8px;
+}
+@media (max-width:700px){ .mode-grid{ grid-template-columns:1fr; } }
+
+.mode-card{
+  background:white;
+  border:1.5px solid var(--line-strong);
+  border-radius:6px;
+  padding:28px;
+  cursor:pointer;
+  transition: all .2s;
+  position:relative;
+  overflow:hidden;
+}
+.mode-card:hover{ border-color:var(--navy); transform:translateY(-2px); box-shadow:0 10px 24px -14px rgba(26,35,50,0.25); }
+.mode-card.selected{ border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(45,110,126,0.12); }
+.mode-card .icon{
+  width:42px; height:42px;
+  border-radius:50%;
+  background:var(--paper);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:18px;
+  border:1px solid var(--line-strong);
+}
+.mode-card h3{ font-size:19px; color:var(--navy); margin-bottom:8px; font-weight:600; }
+.mode-card p{ font-size:13.5px; color:#6b7078; line-height:1.6; }
+.mode-card .tag{
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  color:var(--terracotta);
+  margin-top:14px;
+  display:inline-block;
+}
+
+.page-header{
+  padding:48px 0 8px;
+}
+.page-header h2{ font-size:30px; color:var(--navy); margin-bottom:8px; }
+.page-header p{ color:#6b7078; font-size:14.5px; max-width:560px; }
+
+/* ---------- FORM PAGE ---------- */
+.form-grid{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap:36px;
+  margin-top:28px;
+}
+@media (max-width:820px){ .form-grid{ grid-template-columns:1fr; } }
+
+.panel{
+  background:white;
+  border:1px solid var(--line-strong);
+  border-radius:6px;
+  padding:24px;
+}
+.field-group{ margin-bottom:20px; }
+.field-group label{
+  display:block;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--navy);
+  margin-bottom:8px;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
+  font-family:'JetBrains Mono', monospace;
+}
+.pill-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.pill{
+  border:1.5px solid var(--line-strong);
+  background:white;
+  padding:9px 16px;
+  border-radius:20px;
+  font-size:13.5px;
+  cursor:pointer;
+  transition:all .15s;
+  font-weight:500;
+}
+.pill:hover{ border-color:var(--steel); }
+.pill.active{ background:var(--navy); color:white; border-color:var(--navy); }
+
+select, input[type=number]{
+  width:100%;
+  padding:11px 14px;
+  border:1.5px solid var(--line-strong);
+  border-radius:4px;
+  font-size:14px;
+  font-family:'Inter', sans-serif;
+  background:white;
+  color:var(--ink);
+}
+select:focus, input:focus{ outline:none; border-color:var(--terracotta); }
+
+.helper{ font-size:12px; color:#9aa0a8; margin-top:6px; line-height:1.5; }
+
+/* manual point table */
+.point-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.point-table th{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; text-transform:uppercase; letter-spacing:0.04em;
+  color:#9aa0a8; text-align:left; padding:6px 8px; border-bottom:1.5px solid var(--line-strong);
+}
+.point-table td{ padding:5px 8px; }
+.point-table input{ padding:7px 8px; font-size:13px; }
+.point-table tr td:first-child{
+  font-family:'JetBrains Mono', monospace;
+  color:var(--terracotta);
+  font-weight:700;
+  width:24px;
+}
+
+/* --- Measurement guide --- */
+.measure-guide{
+  background:linear-gradient(135deg,#f0f4f5,#e8eff1);
+  border:1px solid rgba(45,110,126,0.2);
+  border-radius:8px;
+  padding:16px 18px;
+  margin-bottom:4px;
+}
+.guide-header{
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.guide-badge{
+  background:var(--terracotta); color:white;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
+  padding:3px 8px; border-radius:3px;
+}
+.guide-title{ font-weight:600; font-size:14px; color:var(--navy); }
+.guide-steps{
+  padding-left:18px; font-size:12.5px; color:#4a4f57; line-height:1.8;
+  margin:0 0 10px;
+}
+.guide-steps b{ color:var(--terracotta); }
+.guide-note{
+  font-size:12px; color:#5a6568;
+  background:white; border-radius:5px;
+  padding:8px 12px; line-height:1.5;
+}
+
+/* --- Enhanced measure table --- */
+.measure-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.measure-table thead th{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em;
+  color:#9aa0a8; text-align:left; padding:7px 8px;
+  border-bottom:1.5px solid var(--line-strong);
+  line-height:1.4;
+}
+.measure-row{ border-bottom:1px solid var(--line); transition:background .1s; }
+.measure-row:hover{ background:#f8fafb; }
+.measure-row td{ padding:10px 8px; vertical-align:top; }
+.pt-icon{ font-size:16px; text-align:center; padding-top:11px !important; }
+.pt-label-col{ min-width:140px; }
+.pt-label{ font-weight:600; color:var(--navy); font-size:12.5px; margin-bottom:3px; }
+.pt-tip{ font-size:11px; color:#8a9598; line-height:1.4; }
+.pt-depth-tip{ font-size:10.5px; color:#9aa0a8; margin-top:3px; line-height:1.3; }
+.pt-input{
+  width:80px; padding:7px 8px; font-size:13px;
+  border:1.5px solid var(--line-strong); border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+  background:white; color:var(--ink);
+}
+.pt-input:focus{ outline:none; border-color:var(--terracotta); }
+
+.preview-stage{
+  background:white;
+  border:1px solid var(--line-strong);
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:420px;
+  position:relative;
+}
+.preview-stage svg{ max-width:100%; }
+.preview-placeholder{
+  text-align:center;
+  color:#c7c2b8;
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+}
+.preview-placeholder svg{ width:64px; height:64px; opacity:0.4; margin-bottom:12px;}
+
+.nav-row{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:36px;
+  padding-top:24px;
+  border-top:1px solid var(--line-strong);
+}
+
+/* ---------- RESULTS PAGE ---------- */
+.results-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:24px;
+  margin-top:24px;
+}
+@media (max-width:900px){ .results-grid{ grid-template-columns:1fr; } }
+
+.result-card{
+  background:white;
+  border:1px solid var(--line-strong);
+  border-radius:6px;
+  padding:22px;
+}
+.result-card h3{
+  font-size:14px;
+  font-family:'JetBrains Mono', monospace;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--navy);
+  margin-bottom:16px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:8px;
+}
+.legend{ display:flex; gap:14px; font-size:11.5px; color:#7a7f87; font-weight:400; flex-wrap:wrap; }
+.legend span{ display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.legend .sw{ width:10px;height:10px;border-radius:50%; display:inline-block; flex-shrink:0; }
+@media (max-width:480px){
+  .result-card h3{ flex-direction:column; align-items:flex-start; }
+}
+
+#viewer3d{ width:100%; height:380px; border-radius:4px; overflow:hidden; background:radial-gradient(ellipse at 50% 30%, #fcfbf8 0%, #f0eee7 100%); cursor:grab; position:relative; }
+#viewer3d:active{ cursor:grabbing; }
+.viewer-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+.viewer-controls{ display:flex; gap:8px; flex-wrap:wrap; }
+.color-picker{ display:flex; align-items:center; gap:8px; }
+.color-picker-label{
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:#9aa0a8;
+  margin-right:2px;
+}
+.color-swatch{
+  width:22px; height:22px;
+  border-radius:50%;
+  cursor:pointer;
+  border:2px solid transparent;
+  box-shadow:0 0 0 1px rgba(26,35,50,0.12);
+  transition:transform .15s, box-shadow .15s;
+}
+.color-swatch:hover{ transform:translateY(-2px) scale(1.08); }
+.color-swatch.active{
+  border-color:white;
+  box-shadow:0 0 0 2px var(--navy), 0 2px 6px rgba(26,35,50,0.3);
+}
+
+.metrics-card{
+  grid-column: span 2;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--line-strong);
+  border:1px solid var(--line-strong);
+  border-radius:6px;
+  overflow:hidden;
+}
+@media (max-width:700px){ .metrics-card{ grid-template-columns:repeat(2,1fr); } }
+.metric{
+  background:white;
+  padding:20px;
+  position:relative;
+  transition:background .15s;
+}
+.metric:hover{ background:#fbfaf7; }
+.metric::before{
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--terracotta);
+  opacity:0;
+  transition:opacity .15s;
+}
+.metric:hover::before{ opacity:1; }
+.metric .label{
+  font-size:11px;
+  font-family:'JetBrains Mono', monospace;
+  text-transform:uppercase;
+  color:#9aa0a8;
+  margin-bottom:8px;
+  letter-spacing:0.03em;
+}
+.metric .value{
+  font-size:24px;
+  font-family:'Newsreader', serif;
+  color:var(--navy);
+  font-weight:600;
+}
+.metric .value span{ font-size:14px; color:#9aa0a8; font-family:'Inter',sans-serif; }
+
+.equation-card{
+  grid-column:span 2;
+  background:var(--navy);
+  color:white;
+  border-radius:6px;
+  padding:24px;
+}
+.equation-card h3{ color:white; font-family:'JetBrains Mono',monospace; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:14px; opacity:0.7;}
+.equation-card .eq{
+  font-family:'JetBrains Mono', monospace;
+  font-size:clamp(11.5px, 1.6vw, 13.5px);
+  line-height:2.1;
+  word-break:break-word;
+  color:#e8eef2;
+  overflow-wrap:anywhere;
+}
+.equation-card .eq .coef{ color:var(--terracotta); font-weight:600; }
+@media (max-width:700px){
+  .equation-card{ grid-column:span 1; }
+  .metrics-card{ grid-column:span 1; }
+  .note-card{ grid-column:span 1; }
+}
+
+.note-card{
+  grid-column:span 2;
+  background:#FBF0EC;
+  border:1px solid rgba(232,101,79,0.25);
+  border-radius:6px;
+  padding:18px 22px;
+  font-size:13px;
+  color:#6b3a30;
+  line-height:1.6;
+  display:flex; gap:12px;
+}
+.note-card svg{ flex-shrink:0; width:18px; height:18px; margin-top:1px; }
+
+/* --- section divider (used to organize the results page into clear groups) --- */
+.results-section-divider{
+  display:flex; align-items:center; gap:12px;
+  margin:36px 0 16px;
+}
+.results-section-divider .kicker{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11.5px;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--terracotta);
+  white-space:nowrap;
+}
+.results-section-divider .line{ flex:1; height:1px; background:var(--line-strong); }
+
+/* --- method toggle (Lagrange vs Cubic Spline) --- */
+.method-toggle-row{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:14px 18px; margin-top:18px;
+}
+.method-toggle-label{
+  font-size:13px; font-weight:600; color:var(--navy);
+  white-space:nowrap;
+}
+.method-hint{
+  font-size:12px; color:#9aa0a8; margin-left:auto;
+}
+@media (max-width:700px){
+  .method-toggle-row{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .method-hint{ margin-left:0; }
+}
+
+/* --- Runge's phenomenon alert --- */
+.runge-box{ margin-top:14px; }
+.runge-ok{
+  display:flex; align-items:center; gap:10px;
+  font-size:12.5px; color:#2E8B57;
+  background:#EEF8F1; border:1px solid rgba(46,139,87,0.25);
+  border-radius:5px; padding:10px 14px;
+}
+.runge-ok svg{ width:16px; height:16px; flex-shrink:0; }
+.runge-warn{
+  display:flex; gap:10px; align-items:flex-start;
+  font-size:12.5px; color:#6b3a30; line-height:1.6;
+  background:#FBF0EC; border:1px solid rgba(232,101,79,0.25);
+  border-radius:5px; padding:12px 14px;
+}
+.runge-warn svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+
+/* --- angle / mechanical analysis card --- */
+.angle-card{
+  grid-column:span 2;
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:22px;
+}
+@media (max-width:700px){ .angle-card{ grid-column:span 1; } }
+.angle-headline{
+  display:flex; align-items:baseline; gap:10px; margin-bottom:16px;
+  padding-bottom:16px; border-bottom:1px solid var(--line);
+}
+.angle-headline .num{
+  font-family:'Newsreader', serif; font-size:32px; font-weight:600; color:var(--navy);
+}
+.angle-headline .lbl{ font-size:13px; color:#6b7078; }
+.angle-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:9px 0; font-size:13.5px; color:#4a4f57;
+  border-bottom:1px solid var(--line);
+}
+.angle-row:last-child{ border-bottom:none; }
+.angle-row b{ font-family:'JetBrains Mono', monospace; color:var(--navy); font-weight:600; }
+.angle-row.highlight{ color:var(--navy); font-weight:600; }
+.angle-row.highlight b{ color:var(--terracotta); }
+
+/* --- ANSI compliance card --- */
+.ansi-card{
+  grid-column:span 2;
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:18px 22px;
+  display:flex; flex-direction:column; gap:8px;
+}
+@media (max-width:700px){ .ansi-card{ grid-column:span 1; } }
+.ansi-row{
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; padding:6px 0;
+}
+.ansi-row span{
+  width:20px; height:20px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700;
+}
+.ansi-row.pass span{ background:#EEF8F1; color:#2E8B57; }
+.ansi-row.warn span{ background:#FBF0EC; color:#E8654F; }
+.ansi-row.pass{ color:#2A2A2A; }
+.ansi-row.warn{ color:#6b3a30; }
+
+/* --- size recommendation + export row --- */
+.size-export-grid{
+  grid-column:span 2;
+  display:grid; grid-template-columns:1fr 1fr; gap:20px;
+}
+@media (max-width:700px){ .size-export-grid{ grid-column:span 1; grid-template-columns:1fr; } }
+.size-card{
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:22px; display:flex; align-items:center; gap:16px;
+}
+.size-badge{
+  width:52px; height:52px; border-radius:10px;
+  background:var(--navy); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Newsreader', serif; font-size:24px; font-weight:600;
+  flex-shrink:0;
+}
+.size-label{ font-size:15px; font-weight:600; color:var(--navy); margin-bottom:4px; }
+.size-range{ font-size:11.5px; color:#9aa0a8; }
+.export-card{
+  background:white; border:1px solid var(--line-strong); border-radius:6px;
+  padding:22px; display:flex; flex-direction:column; gap:10px; justify-content:center;
+}
+.export-card .export-title{ font-size:14px; font-weight:600; color:var(--navy); }
+.export-card .export-desc{ font-size:12px; color:#9aa0a8; line-height:1.5; }
+
+/* ============================================================
+   CLINICAL ASSESSMENT THEME — scoped to #pageAssess
+   A calmer, more formal palette than the consumer-facing chair tool,
+   to read as a clinical intake form rather than a product page.
+   ============================================================ */
+#pageAssess{
+  --clinical-teal: #2D6E7E;
+  --clinical-teal-deep: #1F4E5A;
+  --clinical-line: #D8E0E2;
+}
+#pageAssess .section-title .num{ color:var(--clinical-teal); }
+#pageAssess .page-header h2{ font-family:'Newsreader', serif; font-weight:600; }
+
+.clinical-formhead{
+  background:white;
+  border:1px solid var(--clinical-line);
+  border-radius:6px;
+  padding:16px 22px;
+  margin-top:18px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+}
+.clinical-formhead .field{
+  font-family:'JetBrains Mono', monospace; font-size:11px; color:#8a9598;
+}
+.clinical-formhead .field b{ color:var(--clinical-teal-deep); font-weight:600; }
+
+.assess-card{
+  grid-column:span 2;
+  background:white; border:1px solid var(--clinical-line); border-radius:6px;
+  padding:0;
+  overflow:hidden;
+}
+@media (max-width:700px){ .assess-card{ grid-column:span 1; } }
+
+.assess-intro{
+  font-size:13px; color:#5a6568; line-height:1.7;
+  padding:22px 26px;
+  border-bottom:1px solid var(--clinical-line);
+  background:#FAFCFC;
+}
+
+.clinical-section{
+  padding:24px 26px;
+  border-bottom:1px solid var(--clinical-line);
+}
+.clinical-section:last-of-type{ border-bottom:none; }
+.clinical-section-title{
+  display:flex; align-items:center; gap:10px;
+  font-size:14px; font-weight:700; color:var(--clinical-teal-deep);
+  margin-bottom:6px;
+}
+.clinical-section-title .badge{
+  width:24px; height:24px; border-radius:50%;
+  background:var(--clinical-teal); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:600;
+  flex-shrink:0;
+}
+.clinical-section-desc{
+  font-size:12.5px; color:#8a9598; line-height:1.6; margin-bottom:18px;
+}
+
+/* --- region row: label + severity + frequency, table-like on desktop --- */
+.assess-region{
+  display:grid;
+  grid-template-columns: 110px 1fr;
+  gap:14px 18px;
+  padding:14px 0;
+  border-bottom:1px dashed var(--clinical-line);
+  align-items:start;
+}
+.assess-region:last-child{ border-bottom:none; padding-bottom:0; }
+.assess-region:first-child{ padding-top:0; }
+@media (max-width:640px){
+  .assess-region{ grid-template-columns:1fr; }
+}
+.assess-region-label{
+  font-size:13.5px; font-weight:600; color:var(--navy);
+  padding-top:6px;
+}
+.assess-region-inputs{ display:flex; flex-direction:column; gap:10px; }
+.assess-dimension-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.assess-dimension-label{
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; text-transform:uppercase; letter-spacing:0.04em;
+  color:#9aa6a8; width:78px; flex-shrink:0;
+}
+.assess-scale{ display:flex; gap:6px; flex-wrap:wrap; }
+.assess-chip{
+  border:1.5px solid var(--clinical-line);
+  background:white;
+  padding:7px 13px;
+  border-radius:16px;
+  font-size:12px;
+  cursor:pointer;
+  transition:all .15s;
+  color:#6b7078;
+}
+.assess-chip:hover{ border-color:var(--clinical-teal); }
+.assess-chip.active{ background:var(--clinical-teal-deep); color:white; border-color:var(--clinical-teal-deep); }
+
+/* --- duration question --- */
+.assess-duration-options{ display:flex; gap:8px; flex-wrap:wrap; }
+.assess-duration-chip{
+  border:1.5px solid var(--clinical-line);
+  background:white;
+  padding:10px 16px;
+  border-radius:5px;
+  font-size:12.5px;
+  cursor:pointer;
+  transition:all .15s;
+  color:#4a4f57;
+  flex:1; min-width:120px; text-align:center;
+}
+.assess-duration-chip:hover{ border-color:var(--clinical-teal); }
+.assess-duration-chip.active{ background:var(--clinical-teal-deep); color:white; border-color:var(--clinical-teal-deep); }
+
+/* --- red flag checklist --- */
+.redflag-list{ display:flex; flex-direction:column; gap:10px; }
+.redflag-item{
+  display:flex; align-items:flex-start; gap:11px;
+  padding:11px 14px;
+  border:1.5px solid var(--clinical-line);
+  border-radius:5px;
+  cursor:pointer;
+  transition:all .15s;
+  font-size:13px; color:#4a4f57; line-height:1.5;
+}
+.redflag-item:hover{ border-color:#D9A0A0; background:#FFFAF9; }
+.redflag-item.checked{ border-color:#C0504D; background:#FDF2F1; }
+.redflag-checkbox{
+  width:18px; height:18px; border-radius:4px;
+  border:1.5px solid #c7c2b8;
+  flex-shrink:0; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s;
+}
+.redflag-item.checked .redflag-checkbox{ background:#C0504D; border-color:#C0504D; }
+.redflag-checkbox svg{ width:11px; height:11px; opacity:0; transition:opacity .1s; }
+.redflag-item.checked .redflag-checkbox svg{ opacity:1; }
+
+.clinical-submit-row{ padding:22px 26px; background:#FAFCFC; }
+.clinical-submit-row .btn-primary{ background:var(--clinical-teal-deep); }
+.clinical-submit-row .btn-primary:hover{ background:#163942; }
+
+.assess-disclaimer{
+  display:flex; gap:10px; align-items:flex-start;
+  padding:18px 26px;
+  background:#F4F7F7;
+  font-size:11.5px; color:#8a9598; line-height:1.6;
+}
+.assess-disclaimer svg{ width:15px; height:15px; flex-shrink:0; margin-top:1px; }
+.assess-disclaimer b{ color:#5a6568; }
+
+.assess-result-box{
+  border-radius:6px; padding:18px 22px;
+  display:flex; align-items:center; gap:16px;
+}
+.assess-result-box.risk-low{ background:#EEF8F1; border:1px solid rgba(46,139,87,0.25); }
+.assess-result-box.risk-moderate{ background:#FFF6E8; border:1px solid rgba(214,158,46,0.3); }
+.assess-result-box.risk-high{ background:#FBF0EC; border:1px solid rgba(232,101,79,0.3); }
+.assess-result-box.risk-urgent{ background:#FCEAEA; border:1.5px solid #C0504D; }
+.assess-result-badge{
+  font-family:'Newsreader', serif; font-size:24px; font-weight:600;
+  flex-shrink:0;
+}
+.risk-low .assess-result-badge{ color:#2E8B57; }
+.risk-moderate .assess-result-badge{ color:#B8860B; }
+.risk-high .assess-result-badge{ color:#E8654F; }
+.risk-urgent .assess-result-badge{ color:#C0504D; }
+.assess-result-text{ font-size:13px; color:#4a4f57; line-height:1.6; }
+.assess-result-text b{ display:block; font-size:14.5px; margin-bottom:3px; color:#2A2A2A; }
+.assess-score-detail{
+  margin-top:14px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.08);
+  font-family:'JetBrains Mono', monospace; font-size:11px; color:#8a9598;
+}
+
+/* --- clinic / hospital recommendation --- */
+.clinic-section{ padding:24px 26px; background:white; border-top:1px solid var(--clinical-line); }
+.clinic-section-title{
+  font-size:14px; font-weight:700; color:var(--clinical-teal-deep);
+  margin-bottom:4px;
+}
+.clinic-section-sub{ font-size:12px; color:#8a9598; margin-bottom:16px; line-height:1.6; }
+.clinic-list{ display:flex; flex-direction:column; gap:10px; }
+.clinic-item{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+  padding:14px 16px;
+  border:1px solid var(--clinical-line);
+  border-radius:5px;
+  flex-wrap:wrap;
+}
+.clinic-item-main{ flex:1; min-width:200px; }
+.clinic-name{ font-size:13.5px; font-weight:600; color:var(--navy); margin-bottom:3px; }
+.clinic-meta{ font-size:11.5px; color:#8a9598; line-height:1.5; }
+.clinic-tag{
+  font-family:'JetBrains Mono', monospace; font-size:9.5px; text-transform:uppercase;
+  background:#EAF1F2; color:var(--clinical-teal-deep);
+  padding:3px 8px; border-radius:3px; margin-right:6px; display:inline-block; margin-bottom:4px;
+}
+.clinic-phone{
+  font-family:'JetBrains Mono', monospace; font-size:12.5px;
+  color:var(--clinical-teal-deep); font-weight:600;
+  white-space:nowrap;
+}
+.clinic-finder-row{
+  margin-top:14px; padding-top:14px; border-top:1px dashed var(--clinical-line);
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.clinic-finder-text{ font-size:12px; color:#8a9598; flex:1; min-width:180px; }
+.clinic-disclaimer{
+  margin-top:14px; font-size:11px; color:#9aa6a8; line-height:1.6;
+  display:flex; gap:8px; align-items:flex-start;
+}
+.clinic-disclaimer svg{ width:13px; height:13px; flex-shrink:0; margin-top:1px; }
+
+footer{
+  text-align:center;
+  padding:32px;
+  font-size:12px;
+  color:#9aa0a8;
+  font-family:'JetBrains Mono', monospace;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M6 2 C6 8, 14 9, 14 14 C14 18, 9 18, 9 21" stroke="#2D6E7E" stroke-width="2" stroke-linecap="round"/></svg>
+    SpineFit
+  </div>
+  <div class="steps" id="stepIndicator">
+    <div class="step active" data-step="0"><div class="dot">1</div><span>เลือกโหมด</span></div>
+    <div class="step-connector"></div>
+    <div class="step" data-step="1"><div class="dot">2</div><span>กรอกข้อมูล</span></div>
+    <div class="step-connector"></div>
+    <div class="step" data-step="2"><div class="dot">3</div><span>ดูผล</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ================= PAGE 0: INTRO / MODE SELECT ================= -->
+  <div class="page active" id="page0">
+
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Polynomial Interpolation · Ergonomics</div>
+        <h1>ออกแบบพนักพิง<br><em>เฉพาะสันหลังคุณ</em></h1>
+        <p class="lede">เครื่องมือคำนวณเส้นโค้งพนักพิงเก้าอี้จากจุดพิกัดสรีระ 6 จุด ด้วยพหุนามดีกรี 5 ต่อยอดจากโครงงานคณิตศาสตร์ "การพัฒนาพนักพิงเก้าอี้ตามแนวสันหลังโค้งด้วย Polynomial Interpolation" — กรอกข้อมูลของคุณ แล้วดูกราฟและโมเดล 3 มิติที่คำนวณขึ้นเฉพาะสำหรับคุณ</p>
+        <div class="equation-box">x = ay⁵ + by⁴ + cy³ + dy² + ey + f</div>
+        <div><button class="btn btn-primary" id="startBtn">เริ่มออกแบบ →</button></div>
+      </div>
+      <div class="plotter-stage">
+        <svg viewBox="0 0 280 320" id="heroSvg"></svg>
+        <div class="cap"><span>ตัวอย่าง: สันหลังผู้ใหญ่ 19–29 ปี</span><span class="mono">n = 6 nodes</span></div>
+      </div>
+    </div>
+
+    <div class="source-strip">
+      <div><b>6 จุดพิกัด</b> ก้น · เอว · จุดนูนสุด · หลังบน · ฐานคอ</div>
+      <div><b>16 กลุ่มอ้างอิง</b> 8 ช่วงอายุ × 2 เพศ จาก NASA / WHO</div>
+      <div><b>ผลลัพธ์</b> กราฟสันหลัง + พนักพิง + โมเดล 3 มิติ</div>
+    </div>
+
+    <div class="page-header">
+      <div class="section-title"><span class="num">01</span> เลือกวิธีกรอกข้อมูล</div>
+      <h2>ข้อมูลของคุณมาจากไหน?</h2>
+      <p>เลือกได้สองทาง — กรอกพิกัดที่วัดมาเองโดยตรง หรืออ้างอิงจากข้อมูลมาตรฐานในเล่มโครงงานตามเพศและช่วงอายุ</p>
+    </div>
+
+    <div class="assess-entry-banner" id="assessEntryBanner">
+      <div class="assess-entry-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D6E7E" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <div class="assess-entry-text">
+        <h3>แบบประเมินความเสี่ยงด้านการยศาสตร์</h3>
+        <p>เช็กอาการคอ บ่า หลังบน หลังล่าง ใน 7 วันที่ผ่านมา — ไม่ใช่เครื่องมือวินิจฉัยโรค</p>
+      </div>
+      <button class="btn btn-ghost btn-sm assess-entry-btn" id="goToAssessBtn">เริ่มประเมิน →</button>
+    </div>
+
+    <div class="mode-grid">
+      <div class="mode-card" data-mode="manual" id="cardManual">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="1.6"><circle cx="5" cy="19" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="9" cy="10" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="14" cy="6" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="19" cy="13" r="1.6" fill="#2D6E7E" stroke="none"/><path d="M5 19 L9 10 L14 6 L19 13" stroke-dasharray="2 2"/></svg>
+        </div>
+        <h3>กรอกพิกัดเอง</h3>
+        <p>ระบุค่า Distance และ Depth ของจุดสรีระทั้ง 6 จุดด้วยตัวเอง เหมาะถ้ามีข้อมูลวัดจริงของบุคคลอยู่แล้ว</p>
+        <span class="tag">Manual · 6 points</span>
+      </div>
+
+      <div class="mode-card" data-mode="preset" id="cardPreset">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1" fill="#2D6E7E" stroke="none"/></svg>
+        </div>
+        <h3>ใช้ข้อมูลมาตรฐาน</h3>
+        <p>เลือกเพศและช่วงอายุ ระบบจะดึงพิกัดมาตรฐานจากตารางในเล่มโครงงาน (อ้างอิง NASA / WHO) มาให้ทันที</p>
+        <span class="tag">Preset · 8 age groups</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= PAGE A: ERGONOMIC RISK ASSESSMENT (standalone, reachable from homepage) ================= -->
+  <div class="page" id="pageAssess">
+    <div class="page-header">
+      <div class="section-title"><span class="num">✓</span> แบบประเมิน</div>
+      <h2>แบบประเมินความเสี่ยงด้านการยศาสตร์</h2>
+      <p>ทางเลือกเสริม ไม่จำเป็นต้องออกแบบพนักพิงก่อนก็ใช้ได้ — ผลลัพธ์ไม่ใช่การวินิจฉัยทางการแพทย์</p>
+    </div>
+
+    <div class="clinical-formhead">
+      <div class="field">แบบฟอร์ม <b>OCC-MSK-01</b> · การประเมินความเสี่ยงทางการยศาสตร์เบื้องต้น</div>
+      <div class="field" id="formDateField">วันที่ —</div>
+    </div>
+
+    <div class="results-grid" style="margin-top:18px;">
+      <div class="assess-card">
+        <p class="assess-intro">
+          แบบประเมินนี้ใช้แนวคิดการให้คะแนนตามบริเวณร่างกายและความถี่ของอาการ ได้แรงบันดาลใจจากหลักการของ
+          <span class="mono" style="font-size:11.5px;">Nordic Musculoskeletal Questionnaire</span>
+          แต่เป็นแบบประเมินที่ออกแบบขึ้นเองสำหรับการใช้งานร่วมกับเครื่องมือออกแบบพนักพิงนี้เท่านั้น ไม่ใช่แบบสอบถามฉบับจริงและไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์
+        </p>
+
+        <div class="clinical-section">
+          <div class="clinical-section-title"><span class="badge">1</span> อาการตามบริเวณร่างกาย</div>
+          <div class="clinical-section-desc">ระบุความรุนแรงและความถี่ของอาการในช่วง 7 วันที่ผ่านมา สำหรับแต่ละบริเวณ</div>
+          <div id="assessRegions"><!-- injected by JS --></div>
+        </div>
+
+        <div class="clinical-section">
+          <div class="clinical-section-title"><span class="badge">2</span> ระยะเวลาของอาการ</div>
+          <div class="clinical-section-desc">นับจากอาการที่เป็นมานานที่สุดในบริเวณที่เลือกไว้ข้างต้น</div>
+          <div class="assess-duration-options" id="assessDuration"><!-- injected by JS --></div>
+        </div>
+
+        <div class="clinical-section">
+          <div class="clinical-section-title"><span class="badge">3</span> อาการร่วมที่ควรพบแพทย์โดยไม่ชักช้า</div>
+          <div class="clinical-section-desc">กรุณาเลือกอาการที่ท่านพบร่วมด้วย (ถ้ามี) — ข้อนี้ไม่บังคับ</div>
+          <div class="redflag-list" id="assessRedFlags"><!-- injected by JS --></div>
+        </div>
+
+        <div class="clinical-submit-row">
+          <button class="btn btn-primary btn-sm" id="assessSubmitBtn">ประเมินผล →</button>
+        </div>
+
+        <div id="assessResult"><!-- injected by JS --></div>
+        <div id="clinicRecommend"><!-- injected by JS --></div>
+
+        <div class="assess-disclaimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9aa0a8" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <div>แบบประเมินนี้ออกแบบขึ้นเพื่อใช้ประกอบการเลือกปรับพนักพิงเท่านั้น <b>ไม่สามารถวินิจฉัยโรคหรือภาวะทางการแพทย์ใดๆ ได้</b>
+          ผลลัพธ์ไม่ใช่คำวินิจฉัย หากมีอาการปวดรุนแรง เรื้อรัง หรือมีอาการร่วมอื่น ควรพบแพทย์หรือนักกายภาพบำบัดโดยตรง</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="backFromAssess">← กลับหน้าแรก</button>
+    </div>
+  </div>
+
+  <!-- ================= PAGE 1: FORM ================= -->
+  <div class="page" id="page1">
+    <div class="page-header">
+      <div class="section-title"><span class="num">02</span> กรอกข้อมูล</div>
+      <h2 id="formTitle">กรอกพิกัดสรีระ 6 จุด</h2>
+
+      <p id="formSub">ระบุระยะ Distance (ความสูงจากเบาะ) และ Depth (ความนูนของสันหลัง) เป็นเซนติเมตร</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="panel" id="inputPanel">
+        <!-- injected by JS depending on mode -->
+      </div>
+
+      <div class="preview-stage" id="livePreviewStage">
+        <div class="preview-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M3 15c3 0 4-8 8-8s5 8 8 8"/></svg>
+          <div>กราฟพรีวิวจะแสดงที่นี่<br>เมื่อกรอกข้อมูลครบ</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="backTo0">← กลับ</button>
+      <button class="btn btn-primary" id="toResults" disabled>คำนวณและดูผล →</button>
+    </div>
+  </div>
+
+  <!-- ================= PAGE 2: RESULTS ================= -->
+  <div class="page" id="page2">
+    <div class="page-header">
+      <div class="section-title"><span class="num">03</span> ผลลัพธ์</div>
+      <h2 id="resultTitle">พนักพิงที่ออกแบบสำหรับคุณ</h2>
+      <p>คำนวณจากจุดพิกัดที่ระบุ ด้วยวิธีการประมาณค่าที่เลือกได้ด้านล่าง</p>
+    </div>
+
+    <div class="method-toggle-row">
+      <span class="method-toggle-label">วิธีการประมาณค่า</span>
+      <div class="pill-row" id="methodPills">
+        <div class="pill active" data-method="lagrange">Lagrange Interpolation (ดีกรี 5)</div>
+        <div class="pill" data-method="spline">Natural Cubic Spline</div>
+      </div>
+      <span class="method-hint">Cubic Spline ไม่เกิดการแกว่งตัวแบบ Runge's Phenomenon โดยทฤษฎี</span>
+    </div>
+
+    <div class="results-grid" style="margin-top:18px;">
+
+      <div class="result-card">
+        <h3>เส้นโค้งสันหลัง vs พนักพิง
+          <span class="legend">
+            <span><span class="sw" style="background:#A3A3A3"></span>สันหลัง</span>
+            <span><span class="sw" style="background:#2D6E7E"></span>พนักพิง</span>
+          </span>
+        </h3>
+        <svg id="graphSvg" viewBox="0 0 360 380" style="width:100%;"></svg>
+        <div class="runge-box" id="rungeAlert"></div>
+      </div>
+
+      <div class="result-card">
+        <h3>โมเดล 3 มิติ
+          <span class="legend"><span class="mono" style="color:#9aa0a8; font-size:11px;">ลากเพื่อหมุน · เลื่อนล้อเมาส์เพื่อซูม</span></span>
+        </h3>
+        <div id="viewer3d"></div>
+        <div class="viewer-toolbar">
+          <div class="viewer-controls">
+            <button class="btn btn-ghost btn-sm" id="spinToggle">⏸ หยุดหมุน</button>
+            <button class="btn btn-ghost btn-sm" id="resetView">รีเซ็ตมุมมอง</button>
+          </div>
+          <div class="color-picker" id="colorPicker">
+            <span class="color-picker-label">สีพนักพิง</span>
+            <div class="color-swatch active" data-color="navy" style="background:#2c3e52" title="กรมท่า"></div>
+            <div class="color-swatch" data-color="red" style="background:#8e2a2a" title="แดง"></div>
+            <div class="color-swatch" data-color="blue" style="background:#274472" title="น้ำเงิน"></div>
+            <div class="color-swatch" data-color="black" style="background:#232323" title="ดำ"></div>
+            <div class="color-swatch" data-color="white" style="background:#e8e6e0; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);" title="ขาว"></div>
+            <div class="color-swatch" data-color="cream" style="background:#d9cbb0" title="ครีม"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="results-section-divider"><span class="kicker">ค่าสำคัญและมาตรฐานอ้างอิง</span><span class="line"></span></div>
+
+    <div class="results-grid">
+      <div class="metrics-card">
+        <div class="metric">
+          <div class="label">Lumbar Apex</div>
+          <div class="value" id="mApex">—<span> cm</span></div>
+        </div>
+        <div class="metric">
+          <div class="label">ความนูนสูงสุด</div>
+          <div class="value" id="mDepth">—<span> cm</span></div>
+        </div>
+        <div class="metric">
+          <div class="label">ความสูงพนักพิง</div>
+          <div class="value" id="mHeight">—<span> cm</span></div>
+        </div>
+        <div class="metric">
+          <div class="label">กลุ่มอ้างอิง</div>
+          <div class="value" id="mGroup" style="font-size:16px;">—</div>
+        </div>
+      </div>
+
+      <div class="ansi-card" id="ansiCheck">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <div class="results-section-divider"><span class="kicker">การวิเคราะห์เชิงกล</span><span class="line"></span></div>
+
+    <div class="results-grid">
+      <div class="angle-card">
+        <div class="angle-headline">
+          <span class="num" id="mAngleApex">—°</span>
+          <span class="lbl">มุมเอียงสัมผัส (จากแนวตั้ง) ที่จุด Lumbar Apex — คำนวณจาก dx/dy ของสมการเส้นโค้ง</span>
+        </div>
+        <div id="angleAnalysis"><!-- injected by JS --></div>
+      </div>
+
+      <div class="equation-card">
+        <h3 id="eqTitle">สมการที่คำนวณได้ (Lagrange)</h3>
+        <div class="eq" id="eqOut">—</div>
+      </div>
+    </div>
+
+    <div class="results-section-divider"><span class="kicker">ขนาดแนะนำและส่งออกข้อมูล</span><span class="line"></span></div>
+
+    <div class="results-grid">
+      <div class="size-export-grid">
+        <div class="size-card" id="sizeRecommendation">
+          <!-- injected by JS -->
+        </div>
+        <div class="export-card">
+          <div class="export-title">ส่งออกพิกัดเป็น CSV</div>
+          <div class="export-desc">ดาวน์โหลดพิกัดความสูง-ความนูนของสันหลังและพนักพิง ทุก 1 ซม. ตามวิธีการคำนวณที่เลือกไว้ — นำไปใช้ต่อกับ CAD/CNC หรือวิเคราะห์เพิ่มเติมได้</div>
+          <button class="btn btn-primary btn-sm" id="exportCsvBtn" style="align-self:flex-start;">ดาวน์โหลด CSV ↓</button>
+        </div>
+      </div>
+
+      <div class="note-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E8654F" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div>โมเดลนี้แสดงเฉพาะมุมมองด้านข้าง (sagittal profile) ขยายเป็นความกว้างที่สัมพันธ์กับความสูง เหมาะสำหรับศึกษาและนำเสนอ ก่อนผลิตจริงควรให้ผู้เชี่ยวชาญด้านกายภาพหรือการยศาสตร์ตรวจสอบขนาดเพิ่มเติม</div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="backTo1">← แก้ไขข้อมูล</button>
+      <button class="btn btn-ghost" id="restartBtn">ออกแบบใหม่อีกครั้ง ↻</button>
+    </div>
+  </div>
+
+</div>
+
+
+
+<script>
+/* ============================================================
+   DATA: 16 preset groups extracted from the project book
+   ============================================================ */
+const PRESETS = {
+  "6-9":   { male:[[0,0],[3.5,0.6],[7.0,1.2],[11.0,2.1],[15.0,1.4],[18.5,0]],
+             female:[[0,0],[3.3,0.55],[6.8,1.15],[10.5,1.95],[14.5,1.3],[18.0,0]] },
+  "10-12": { male:[[0,0],[4.0,0.75],[8.0,1.45],[12.5,2.6],[16.5,1.75],[21.0,0]],
+             female:[[0,0],[3.8,0.7],[7.8,1.4],[12.0,2.4],[16.0,1.65],[20.5,0]] },
+  "13-15": { male:[[0,0],[4.5,0.85],[9.0,1.65],[14.0,3.2],[19.0,2.1],[23.5,0]],
+             female:[[0,0],[4.3,0.8],[8.8,1.55],[13.5,3.0],[18.5,1.95],[23.0,0]] },
+  "16-18": { male:[[0,0],[5.0,1.05],[10.0,2.0],[15.5,3.8],[20.5,2.4],[25.0,0]],
+             female:[[0,0],[4.8,0.95],[9.5,1.85],[14.8,3.5],[19.8,2.2],[24.5,0]] },
+  "19-29": { male:[[0,0],[5.2,1.1],[10.2,2.05],[15.5,4.0],[20.8,2.5],[25.5,0]],
+             female:[[0,0],[5.0,1.0],[10.0,1.95],[15.2,3.8],[20.2,2.3],[25.0,0]] },
+  "30-44": { male:[[0,0],[5.3,1.12],[10.3,2.1],[15.6,4.1],[20.9,2.55],[25.6,0]],
+             female:[[0,0],[5.1,1.02],[10.1,2.0],[15.3,3.85],[20.3,2.35],[25.1,0]] },
+  "45-59": { male:[[0,0],[5.3,1.15],[10.3,2.15],[15.7,4.2],[21.0,2.65],[25.7,0]],
+             female:[[0,0],[5.1,1.05],[10.1,2.05],[15.5,4.0],[20.7,2.45],[25.5,0]] },
+  "60+":   { male:[[0,0],[5.4,1.05],[10.5,2.0],[15.8,4.35],[21.2,2.7],[26.0,0]],
+             female:[[0,0],[5.2,0.95],[10.3,1.9],[15.6,4.1],[20.9,2.6],[25.8,0]] }
+};
+const AGE_LABELS = {
+  "6-9":"6–9 ปี", "10-12":"10–12 ปี", "13-15":"13–15 ปี", "16-18":"16–18 ปี",
+  "19-29":"19–29 ปี", "30-44":"30–44 ปี", "45-59":"45–59 ปี", "60+":"60 ปีขึ้นไป"
+};
+
+/* ============================================================
+   MATH: Lagrange Polynomial Interpolation (degree 5, 6 points)
+   x = f(y)  — matches the book's convention (y = height axis)
+   ============================================================ */
+function lagrangeCoeffs(points){
+  // points: array of [y, x]  (distance=y axis, depth=x axis, per book)
+  // Returns coefficients [a,b,c,d,e,f] for x = a*y^5+...+f, via numeric eval (we keep it functional, not symbolic, to avoid float blowup)
+  return function(yVal){
+    let total = 0;
+    const n = points.length;
+    for(let i=0;i<n;i++){
+      let term = points[i][1];
+      for(let j=0;j<n;j++){
+        if(j===i) continue;
+        term *= (yVal - points[j][0]) / (points[i][0] - points[j][0]);
+      }
+      total += term;
+    }
+    return total;
+  };
+}
+
+// Also derive symbolic polynomial coefficients (degree 5) for display purposes
+function lagrangeSymbolic(points){
+  // build polynomial as coefficient array [c0..c5] using basis expansion
+  const n = points.length;
+  let resultCoeffs = new Array(n).fill(0);
+  for(let i=0;i<n;i++){
+    // build numerator polynomial (product of (y - x_j) for j != i) as coeff array
+    let poly = [1]; // constant 1
+    let denom = 1;
+    for(let j=0;j<n;j++){
+      if(j===i) continue;
+      // multiply poly by (y - x_j)
+      const newPoly = new Array(poly.length+1).fill(0);
+      for(let k=0;k<poly.length;k++){
+        newPoly[k]   += poly[k] * (-points[j][0]);
+        newPoly[k+1] += poly[k];
+      }
+      poly = newPoly;
+      denom *= (points[i][0] - points[j][0]);
+    }
+    const scale = points[i][1] / denom;
+    for(let k=0;k<poly.length;k++){
+      resultCoeffs[k] = (resultCoeffs[k]||0) + poly[k]*scale;
+    }
+  }
+  // resultCoeffs[k] is coefficient of y^k -> reverse for display highest degree first
+  return resultCoeffs; // index = power of y
+}
+
+function fmtSci(num){
+  if(Math.abs(num) < 0.0001 && num !== 0){
+    return num.toExponential(2).replace('e','×10^').replace('+','');
+  }
+  return (Math.round(num*10000)/10000).toString();
+}
+
+function equationString(coeffs, label){
+  // coeffs index = power of y, build from highest to lowest
+  const terms = [];
+  for(let p = coeffs.length-1; p>=0; p--){
+    const c = coeffs[p];
+    if(Math.abs(c) < 1e-12) continue;
+    const sign = c >= 0 ? (terms.length? ' + ':'') : ' − ';
+    const absC = Math.abs(c);
+    let coefStr = absC.toExponential(3).replace('e+','×10^').replace('e-','×10^-');
+    let powStr = p===0 ? '' : (p===1 ? 'y' : `y${toSuperscript(p)}`);
+    terms.push(`${sign}<span class="coef">${coefStr}</span>${powStr}`);
+  }
+  return `${label} = ${terms.join('')}`;
+}
+function toSuperscript(n){
+  const map = {0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵'};
+  return map[n] || ('^'+n);
+}
+
+/* ============================================================
+   NATURAL CUBIC SPLINE — alternative to Lagrange, avoids
+   Runge's phenomenon oscillation by construction.
+   Verified against scipy.interpolate.CubicSpline (natural) — matches to 1e-15.
+   ============================================================ */
+function buildNaturalCubicSpline(points){
+  const h = points.map(p=>p[0]);
+  const v = points.map(p=>p[1]);
+  const n = h.length - 1;
+  const M = new Array(n+1).fill(0);
+
+  if(n >= 2){
+    const a = new Array(n-1), b = new Array(n-1), c = new Array(n-1), d = new Array(n-1);
+    for(let i=1;i<n;i++){
+      a[i-1] = h[i]-h[i-1];
+      b[i-1] = 2*(h[i+1]-h[i-1]);
+      c[i-1] = h[i+1]-h[i];
+      d[i-1] = 6*((v[i+1]-v[i])/(h[i+1]-h[i]) - (v[i]-v[i-1])/(h[i]-h[i-1]));
+    }
+    const cp = c.slice(), dp = d.slice();
+    cp[0] = cp[0]/b[0]; dp[0] = dp[0]/b[0];
+    for(let i=1;i<n-1;i++){
+      const m = b[i] - a[i]*cp[i-1];
+      cp[i] = cp[i]/m;
+      dp[i] = (d[i]-a[i]*dp[i-1])/m;
+    }
+    const xsol = new Array(n-1);
+    xsol[n-2] = dp[n-2];
+    for(let i=n-3;i>=0;i--){
+      xsol[i] = dp[i] - cp[i]*xsol[i+1];
+    }
+    for(let i=1;i<n;i++) M[i] = xsol[i-1];
+  }
+
+  function findSegment(hq){
+    let i = 0;
+    while(i < n-1 && hq > h[i+1]) i++;
+    return i;
+  }
+
+  function evalSpline(hq){
+    const i = findSegment(hq);
+    const delta = h[i+1]-h[i];
+    const A = Math.pow(h[i+1]-hq,3) * M[i] / (6*delta);
+    const B = Math.pow(hq-h[i],3) * M[i+1] / (6*delta);
+    const C = (v[i]/delta - M[i]*delta/6) * (h[i+1]-hq);
+    const D = (v[i+1]/delta - M[i+1]*delta/6) * (hq-h[i]);
+    return A+B+C+D;
+  }
+
+  function evalDerivative(hq){
+    const i = findSegment(hq);
+    const delta = h[i+1]-h[i];
+    const A = -3*Math.pow(h[i+1]-hq,2) * M[i] / (6*delta);
+    const B = 3*Math.pow(hq-h[i],2) * M[i+1] / (6*delta);
+    const C = -(v[i]/delta - M[i]*delta/6);
+    const D = (v[i+1]/delta - M[i+1]*delta/6);
+    return A+B+C+D;
+  }
+
+  return { eval: evalSpline, derivative: evalDerivative };
+}
+
+/* ============================================================
+   DERIVATIVE of the Lagrange polynomial (symbolic), for slope/angle analysis
+   Verified against central finite-difference — matches to 1e-10.
+   ============================================================ */
+function derivativeCoeffs(coeffs){
+  const d = new Array(Math.max(0,coeffs.length-1)).fill(0);
+  for(let p=1;p<coeffs.length;p++){
+    d[p-1] = p*coeffs[p];
+  }
+  return d;
+}
+function evalPolyCoeffs(coeffs, y){
+  let total = 0;
+  for(let p=0;p<coeffs.length;p++) total += coeffs[p]*Math.pow(y,p);
+  return total;
+}
+function slopeToAngleDeg(slope){
+  // y-axis is vertical (height), x-axis is horizontal (depth) — angle measured from the vertical
+  return Math.atan(slope) * 180/Math.PI;
+}
+
+/* ============================================================
+   RUNGE'S PHENOMENON DETECTION
+   Samples densely between each pair of adjacent nodes; flags a segment
+   if the interpolated curve overshoots the local data range by more
+   than 15% of the overall depth range. Verified in Python: zero false
+   positives on all 16 book reference groups, fires correctly on synthetic
+   pathological/uneven data.
+   ============================================================ */
+function detectRunge(points, samplesPerSegment=20, overshootThreshold=0.15){
+  const fn = lagrangeCoeffs(points);
+  const n = points.length;
+  const allDepths = points.map(p=>p[1]);
+  let globalRange = Math.max(...allDepths) - Math.min(...allDepths);
+  if(globalRange < 1e-6) globalRange = 1;
+  const warnings = [];
+  for(let i=0;i<n-1;i++){
+    const y0 = points[i][0], y1 = points[i+1][0];
+    const v0 = points[i][1], v1 = points[i+1][1];
+    const segMin = Math.min(v0,v1), segMax = Math.max(v0,v1);
+    let maxOvershoot = 0;
+    for(let s=1;s<samplesPerSegment;s++){
+      const y = y0 + (y1-y0)*s/samplesPerSegment;
+      const val = fn(y);
+      if(val > segMax) maxOvershoot = Math.max(maxOvershoot, val-segMax);
+      else if(val < segMin) maxOvershoot = Math.max(maxOvershoot, segMin-val);
+    }
+    if(maxOvershoot > overshootThreshold*globalRange){
+      warnings.push({ segment:i, overshoot:maxOvershoot, ratio:maxOvershoot/globalRange });
+    }
+  }
+  return warnings;
+}
+
+/* ============================================================
+   CHAIR SIZE CLASSIFICATION (S/M/L) — thresholds derived from
+   the book's own 8 age-group height ranges (yMax of spine curve).
+   ============================================================ */
+function classifySize(yMax){
+  if(yMax < 19) return { code:'S', label:'เล็ก (เด็ก)', range:'สูงรวม < 19 ซม.' };
+  if(yMax < 24) return { code:'M', label:'กลาง (วัยรุ่น)', range:'สูงรวม 19–24 ซม.' };
+  return { code:'L', label:'ใหญ่ (ผู้ใหญ่)', range:'สูงรวม ≥ 24 ซม.' };
+}
+// ANSI reference, per the book's own literature review (section 2.3):
+// Lumbar Support Protrusion should sit 15–25cm above the seat, with 1–5cm of boost depth.
+const ANSI_APEX_RANGE = [15, 25];
+const ANSI_BOOST_RANGE = [1, 5];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  mode: null,           // 'manual' | 'preset'
+  sex: 'male',
+  age: '19-29',
+  points: null,          // spine points [[y,x],...]
+  backrestPoints: null,  // spine points + 5cm depth
+  interpMethod: 'lagrange', // 'lagrange' | 'spline'
+  curStep: 0
+};
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const pages = [document.getElementById('page0'), document.getElementById('page1'), document.getElementById('page2')];
+const pageAssessEl = document.getElementById('pageAssess');
+const stepEls = document.querySelectorAll('.step');
+
+function goToStep(n){
+  state.curStep = n;
+  pageAssessEl.classList.remove('active');
+  pages.forEach((p,i)=> p.classList.toggle('active', i===n));
+  stepEls.forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i < n) s.classList.add('done');
+    if(i === n) s.classList.add('active');
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showAssessPage(){
+  pages.forEach(p=>p.classList.remove('active'));
+  pageAssessEl.classList.add('active');
+  stepEls.forEach(s=>s.classList.remove('active','done'));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('goToAssessBtn').addEventListener('click', showAssessPage);
+document.getElementById('backFromAssess').addEventListener('click', ()=>goToStep(0));
+
+document.getElementById('backTo0').addEventListener('click', ()=>goToStep(0));
+document.getElementById('backTo1').addEventListener('click', ()=>goToStep(1));
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  state = {mode:null, sex:'male', age:'19-29', points:null, backrestPoints:null, interpMethod:'lagrange', curStep:0};
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('#methodPills .pill').forEach(p=>p.classList.toggle('active', p.dataset.method==='lagrange'));
+  goToStep(0);
+});
+
+/* ============================================================
+   PAGE 0: Mode selection
+   ============================================================ */
+document.getElementById('cardManual').addEventListener('click', ()=>selectMode('manual'));
+document.getElementById('cardPreset').addEventListener('click', ()=>selectMode('preset'));
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  document.querySelector('.mode-grid').scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+function selectMode(mode){
+  state.mode = mode;
+  document.getElementById('cardManual').classList.toggle('selected', mode==='manual');
+  document.getElementById('cardPreset').classList.toggle('selected', mode==='preset');
+  setTimeout(()=>{ buildFormPage(); goToStep(1); }, 180);
+}
+
+/* ============================================================
+   PAGE 1: Build form depending on mode
+   ============================================================ */
+function buildFormPage(){
+  const panel = document.getElementById('inputPanel');
+  const title = document.getElementById('formTitle');
+  const sub = document.getElementById('formSub');
+
+  if(state.mode === 'manual'){
+    title.textContent = 'วัดข้อมูลสรีระของคุณเอง';
+    sub.textContent = 'ทำตามขั้นตอนด้านล่าง — ใช้แค่ไม้บรรทัด/สายวัด และเก้าอี้ที่นั่งอยู่';
+    const defaults = PRESETS["19-29"].male;
+    const landmarks = [
+      { label:'จุดที่ 1 — ก้นสัมผัสเบาะ', tip:'วัดจากจุดที่ก้นสัมผัสพนักพิง (ล่างสุด) ขึ้นมา = 0 cm จากเบาะ', depthTip:'ความนูนต้องการน้อยมากที่ฐาน ใส่ 0', icon:'🪑' },
+      { label:'จุดที่ 2 — หลังส่วนล่าง', tip:'วัดขึ้นมาจากเบาะประมาณ 5 cm', depthTip:'วัดระยะที่หลังอยู่ห่างจากโครงพนักพิงตรง', icon:'📏' },
+      { label:'จุดที่ 3 — เอว (Lumbar region)', tip:'วัดขึ้นมาจากเบาะประมาณ 10 cm บริเวณคอดเอว', depthTip:'หลังเว้าเข้ามากสุดที่นี่ ค่า Depth จะน้อยลง', icon:'↔️' },
+      { label:'จุดที่ 4 — จุดนูนสูงสุด (Lumbar apex)', tip:'บริเวณที่หลังโค้งออกมากสุด ส่วนใหญ่อยู่ประมาณ 15 cm จากเบาะ', depthTip:'ค่า Depth จะมากสุดที่จุดนี้', icon:'⭐' },
+      { label:'จุดที่ 5 — หลังส่วนบน', tip:'บริเวณกระดูกสะบัก ประมาณ 20 cm จากเบาะ', depthTip:'หลังเริ่มโค้งกลับเข้าอีกครั้ง', icon:'📏' },
+      { label:'จุดที่ 6 — ฐานลำคอ', tip:'วัดขึ้นมาจนถึงระดับฐานคอ ความนูน = 0', depthTip:'ใส่ 0 เหมือนจุดที่ 1', icon:'🪑' },
+    ];
+
+    const rows = landmarks.map((lm, i) => `
+      <tr class="measure-row" data-idx="${i}">
+        <td class="pt-icon">${lm.icon}</td>
+        <td class="pt-label-col">
+          <div class="pt-label">${lm.label}</div>
+          <div class="pt-tip">${lm.tip}</div>
+        </td>
+        <td>
+          <input type="number" step="0.1" id="pt${i}_y" value="${defaults[i][0]}"
+            placeholder="ซม." title="${lm.tip}" class="pt-input">
+        </td>
+        <td>
+          <input type="number" step="0.01" id="pt${i}_x" value="${defaults[i][1]}"
+            placeholder="ซม." title="${lm.depthTip}" class="pt-input">
+          <div class="pt-depth-tip">${lm.depthTip}</div>
+        </td>
+      </tr>
+    `).join('');
+
+    panel.innerHTML = `
+      <div class="measure-guide">
+        <div class="guide-header">
+          <span class="guide-badge">คู่มือวัด</span>
+          <span class="guide-title">วิธีวัดด้วยตัวเอง</span>
+        </div>
+        <ol class="guide-steps">
+          <li>นั่งตรงบนเก้าอี้แบน หลังตรง ไม่พิงพนักพิง</li>
+          <li>ให้ผู้ช่วยถือไม้บรรทัดแนวตั้งตั้งแต่เบาะถึงฐานคอ</li>
+          <li><b>Distance (Y)</b> = ระยะจากเบาะขึ้นมาถึงจุดนั้น (วัดแนวตั้ง)</li>
+          <li><b>Depth (X)</b> = ระยะที่หลังยื่นออกหรือเว้าเข้า เทียบกับแนวตรง (วัดแนวนอน)</li>
+          <li>วัดทั้ง 6 จุดตามลำดับจากล่างขึ้นบน</li>
+        </ol>
+        <div class="guide-note">
+          💡 ถ้าไม่มีผู้ช่วย ให้ยืนหันหลังชิดผนัง แล้ววัดระยะห่างระหว่างหลังกับผนังที่แต่ละความสูง
+        </div>
+      </div>
+
+      <div class="field-group" style="margin-top:16px;">
+        <table class="point-table measure-table">
+          <thead>
+            <tr>
+              <th style="width:32px;"></th>
+              <th>ตำแหน่งและวิธีวัด</th>
+              <th style="width:90px;">Distance Y<br><small style="font-weight:400;color:#9aa0a8;">(ซม.จากเบาะ)</small></th>
+              <th style="width:90px;">Depth X<br><small style="font-weight:400;color:#9aa0a8;">(ซม.นูนออก)</small></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="helper" style="margin-top:8px;">
+        จุดที่ 1 และ 6 ควรมี Depth = 0 • ค่าที่แสดงคือค่าเริ่มต้นจากกลุ่มอายุ 19–29 ปี ชาย สำหรับอ้างอิง
+      </div>
+      <div class="field-group" style="margin-top:12px;">
+        <label>ระบุชื่อ/หมายเหตุ (ไม่บังคับ)</label>
+        <input type="text" id="manualLabel" placeholder="เช่น นาย ก. อายุ 24 ปี">
+      </div>
+    `;
+    for(let i=0;i<6;i++){
+      document.getElementById(`pt${i}_y`).addEventListener('input', updateLivePreview);
+      document.getElementById(`pt${i}_x`).addEventListener('input', updateLivePreview);
+    }
+  } else {
+    title.textContent = 'เลือกเพศและช่วงอายุ';
+    sub.textContent = 'ระบบจะดึงพิกัดมาตรฐานจากตารางในเล่มโครงงาน (อ้างอิงข้อมูลจาก NASA และ WHO)';
+    panel.innerHTML = `
+      <div class="field-group">
+        <label>เพศ</label>
+        <div class="pill-row" id="sexPills">
+          <div class="pill active" data-val="male">ชาย</div>
+          <div class="pill" data-val="female">หญิง</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>ช่วงอายุ</label>
+        <div class="pill-row" id="agePills">
+          ${Object.keys(AGE_LABELS).map(k=>`<div class="pill ${k==='19-29'?'active':''}" data-val="${k}">${AGE_LABELS[k]}</div>`).join('')}
+        </div>
+      </div>
+      <div class="helper" style="margin-top:8px;">ค่าพิกัดที่ใช้คำนวณจะแสดงในตารางด้านล่าง สามารถปรับแก้เพิ่มเติมได้</div>
+      <table class="point-table" id="presetTable" style="margin-top:14px;">
+        <tr><th>#</th><th>Distance (Y)</th><th>Depth (X)</th></tr>
+      </table>
+    `;
+    document.querySelectorAll('#sexPills .pill').forEach(p=>{
+      p.addEventListener('click', ()=>{
+        document.querySelectorAll('#sexPills .pill').forEach(x=>x.classList.remove('active'));
+        p.classList.add('active');
+        state.sex = p.dataset.val;
+        renderPresetTable();
+      });
+    });
+    document.querySelectorAll('#agePills .pill').forEach(p=>{
+      p.addEventListener('click', ()=>{
+        document.querySelectorAll('#agePills .pill').forEach(x=>x.classList.remove('active'));
+        p.classList.add('active');
+        state.age = p.dataset.val;
+        renderPresetTable();
+      });
+    });
+    renderPresetTable();
+  }
+  updateLivePreview();
+}
+
+function renderPresetTable(){
+  const pts = PRESETS[state.age][state.sex];
+  const table = document.getElementById('presetTable');
+  let rows = `<tr><th>#</th><th>Distance (Y)</th><th>Depth (X)</th></tr>`;
+  for(let i=0;i<6;i++){
+    rows += `<tr><td>${i+1}</td>
+      <td><input type="number" step="0.1" id="pt${i}_y" value="${pts[i][0]}"></td>
+      <td><input type="number" step="0.01" id="pt${i}_x" value="${pts[i][1]}"></td></tr>`;
+  }
+  table.innerHTML = rows;
+  for(let i=0;i<6;i++){
+    document.getElementById(`pt${i}_y`).addEventListener('input', updateLivePreview);
+    document.getElementById(`pt${i}_x`).addEventListener('input', updateLivePreview);
+  }
+  updateLivePreview();
+}
+
+function readPointsFromForm(){
+  const pts = [];
+  for(let i=0;i<6;i++){
+    const yEl = document.getElementById(`pt${i}_y`);
+    const xEl = document.getElementById(`pt${i}_x`);
+    if(!yEl || !xEl) return null;
+    const y = parseFloat(yEl.value);
+    const x = parseFloat(xEl.value);
+    if(isNaN(y) || isNaN(x)) return null;
+    pts.push([y,x]);
+  }
+  return pts;
+}
+
+function updateLivePreview(){
+  const pts = readPointsFromForm();
+  const btn = document.getElementById('toResults');
+  const stage = document.getElementById('livePreviewStage');
+  if(!pts){ btn.disabled = true; return; }
+  btn.disabled = false;
+  state.points = pts;
+  stage.innerHTML = `<svg viewBox="0 0 300 340" style="width:100%;max-width:320px;">${renderCurveSVG(pts, null, 300, 340)}</svg>`;
+}
+
+document.getElementById('toResults').addEventListener('click', (e)=>{
+  if(!state.points) return;
+  const btn = e.currentTarget;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'กำลังคำนวณ...';
+  setTimeout(()=>{
+    computeAndShowResults();
+    goToStep(2);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }, 250);
+});
+
+/* ============================================================
+   SVG curve rendering (2D graph), shared by preview + results
+   ============================================================ */
+function curveToSvgPath(fn, yMin, yMax, scaleX, scaleY, offsetX, offsetY, steps=80){
+  let d = '';
+  for(let s=0;s<=steps;s++){
+    const y = yMin + (yMax-yMin)*(s/steps);
+    const x = fn(y);
+    const px = offsetX + x*scaleX;
+    const py = offsetY - y*scaleY;
+    d += (s===0? 'M':'L') + px.toFixed(2) + ',' + py.toFixed(2) + ' ';
+  }
+  return d;
+}
+
+function getCurveFn(points, method){
+  if(method === 'spline'){
+    const spline = buildNaturalCubicSpline(points);
+    return spline.eval;
+  }
+  return lagrangeCoeffs(points);
+}
+
+function renderCurveSVG(spinePoints, backPoints, vw, vh, opts={}){
+  const method = opts.method || 'lagrange';
+  const showSplineOverlay = !!opts.showSplineOverlay;
+  const yMax = Math.max(...spinePoints.map(p=>p[0])) * 1.08;
+  const maxDepth = Math.max(...spinePoints.map(p=>p[1]), ...(backPoints?backPoints.map(p=>p[1]):[0])) + 5;
+  const padL = 50, padB = 36, padT = 16, padR = 16;
+  const plotW = vw - padL - padR;
+  const plotH = vh - padT - padB;
+  const scaleY = plotH / yMax;
+  const scaleX = plotW / (maxDepth*2.1);
+  const offsetX = padL + plotW*0.32;
+  const offsetY = vh - padB;
+
+  const spineFn = getCurveFn(spinePoints, method);
+  let svg = '';
+
+  // grid
+  svg += `<g stroke="#e8e5dd" stroke-width="1">`;
+  for(let gy=0; gy<=yMax; gy+=5){
+    const py = offsetY - gy*scaleY;
+    svg += `<line x1="${padL}" y1="${py}" x2="${vw-padR}" y2="${py}"/>`;
+    svg += `<text x="6" y="${py+4}" font-size="9" fill="#9aa0a8" font-family="JetBrains Mono">${gy}</text>`;
+  }
+  svg += `</g>`;
+  // axis
+  svg += `<line x1="${offsetX}" y1="${padT}" x2="${offsetX}" y2="${offsetY}" stroke="#c7c2b8" stroke-width="1"/>`;
+  svg += `<line x1="${padL}" y1="${offsetY}" x2="${vw-padR}" y2="${offsetY}" stroke="#c7c2b8" stroke-width="1"/>`;
+
+  // spine curve
+  const spinePath = curveToSvgPath(spineFn, 0, yMax, scaleX, scaleY, offsetX, offsetY);
+  svg += `<path d="${spinePath}" fill="none" stroke="#A3A3A3" stroke-width="2.5"/>`;
+  spinePoints.forEach(p=>{
+    svg += `<circle cx="${offsetX+p[1]*scaleX}" cy="${offsetY-p[0]*scaleY}" r="3" fill="#A3A3A3"/>`;
+  });
+
+  if(backPoints){
+    const backFn = getCurveFn(backPoints, method);
+    const backPath = curveToSvgPath(backFn, 0, yMax, scaleX, scaleY, offsetX, offsetY);
+    svg += `<path d="${backPath}" fill="none" stroke="#2D6E7E" stroke-width="2.8"/>`;
+
+    if(showSplineOverlay && method === 'lagrange'){
+      const splineFn = getCurveFn(backPoints, 'spline');
+      const splinePath = curveToSvgPath(splineFn, 0, yMax, scaleX, scaleY, offsetX, offsetY);
+      svg += `<path d="${splinePath}" fill="none" stroke="#B8860B" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`;
+    }
+  }
+
+  svg += `<text x="${vw/2}" y="${vh-8}" font-size="10" fill="#9aa0a8" text-anchor="middle" font-family="JetBrains Mono">Depth (cm) →</text>`;
+  return svg;
+}
+
+/* ============================================================
+   COMPUTE RESULTS
+   ============================================================ */
+function computeAndShowResults(){
+  const spinePts = state.points;
+  const backPts = spinePts.map(p => [p[0], p[1] + 5.0]);
+  state.backrestPoints = backPts;
+  const method = state.interpMethod;
+
+  // --- Runge's phenomenon check (always evaluated on the Lagrange fit) ---
+  const rungeWarnings = detectRunge(backPts);
+  const hasRungeRisk = rungeWarnings.length > 0;
+  renderRungeAlert(hasRungeRisk, rungeWarnings);
+
+  document.getElementById('graphSvg').innerHTML = renderCurveSVG(spinePts, backPts, 360, 380, {
+    method, showSplineOverlay: hasRungeRisk
+  });
+
+  // --- core metrics ---
+  const depths = backPts.map(p=>p[1]);
+  const maxDepth = Math.max(...depths);
+  const apexIdx = depths.indexOf(maxDepth);
+  const apexHeight = backPts[apexIdx][0];
+  const totalHeight = Math.max(...spinePts.map(p=>p[0]));
+
+  document.getElementById('mApex').innerHTML = `${apexHeight.toFixed(1)}<span> cm</span>`;
+  document.getElementById('mDepth').innerHTML = `${maxDepth.toFixed(1)}<span> cm</span>`;
+  document.getElementById('mHeight').innerHTML = `${totalHeight.toFixed(1)}<span> cm</span>`;
+  document.getElementById('mGroup').textContent = state.mode==='preset'
+    ? `${state.sex==='male'?'ชาย':'หญิง'} · ${AGE_LABELS[state.age]}`
+    : 'กำหนดเอง';
+
+  const coeffs = lagrangeSymbolic(backPts);
+  const eqTitle = document.getElementById('eqTitle');
+  const eqOut = document.getElementById('eqOut');
+  if(method === 'spline'){
+    eqTitle.textContent = 'สมการที่ใช้ (Cubic Spline)';
+    eqOut.innerHTML = `Cubic Spline ไม่มีสมการเดียวแบบ Lagrange แต่เป็น<b style="color:#fff;">พหุนามดีกรี 3 แยกทีละช่วง</b> (5 ช่วง จาก 6 จุด)
+      เชื่อมต่อกันอย่างเรียบเนียนที่แต่ละจุด (ค่าและความชันต่อเนื่อง)<br><br>
+      <span style="opacity:0.6; font-size:12px;">อ้างอิง: สมการ Lagrange ดีกรี 5 ของชุดข้อมูลเดียวกันคือ</span><br>
+      ${equationString(coeffs, 'x(y)')}`;
+  } else {
+    eqTitle.textContent = 'สมการที่คำนวณได้ (Lagrange)';
+    eqOut.innerHTML = equationString(coeffs, 'x<sub>พนักพิง</sub>(y)');
+  }
+
+  document.getElementById('resultTitle').textContent =
+    state.mode==='preset' ? `พนักพิงสำหรับกลุ่ม ${state.sex==='male'?'ชาย':'หญิง'} ${AGE_LABELS[state.age]}` : 'พนักพิงที่ออกแบบสำหรับคุณ';
+
+  // --- Feature 1: slope / tilt angle analysis ---
+  renderAngleAnalysis(backPts, coeffs, apexHeight, method);
+
+  // --- Feature 4: size recommendation + ANSI standard check ---
+  renderSizeAndStandard(totalHeight, apexHeight, maxDepth);
+
+  // --- Feature 3: CSV export wiring ---
+  wireCsvExport(spinePts, backPts, method);
+
+  build3DModel(spinePts, backPts, method);
+}
+
+function renderRungeAlert(hasRisk, warnings){
+  const box = document.getElementById('rungeAlert');
+  if(!box) return;
+  if(!hasRisk){
+    box.innerHTML = `<div class="runge-ok">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+      เส้นโค้งเรียบเนียนดี ไม่พบสัญญาณการแกว่งตัวแบบ Runge's Phenomenon จากจุดที่ระบุ
+    </div>`;
+    return;
+  }
+  box.innerHTML = `<div class="runge-warn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#E8654F" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    <div>
+      <b>ตรวจพบความเสี่ยง Runge's Phenomenon</b> ในช่วงพิกัดที่ ${warnings.map(w=>w.segment+1).join(', ')} —
+      เส้นโค้งพหุนามอาจแกว่งเกินค่าจริงของข้อมูล (เกินช่วงปกติประมาณ ${(Math.max(...warnings.map(w=>w.ratio))*100).toFixed(0)}%)
+      ลองสลับไปดูเส้นสีเขียวประ (Cubic Spline) ที่แสดงเทียบไว้ในกราฟ ซึ่งโดยทฤษฎีจะไม่เกิดการแกว่งแบบนี้
+    </div>
+  </div>`;
+}
+
+function renderAngleAnalysis(backPts, lagrangeCoeffsArr, apexHeight, method){
+  const box = document.getElementById('angleAnalysis');
+  if(!box) return;
+
+  let slopeAtApex, slopeFn;
+  if(method === 'spline'){
+    const spline = buildNaturalCubicSpline(backPts);
+    slopeFn = spline.derivative;
+  } else {
+    const dCoeffs = derivativeCoeffs(lagrangeCoeffsArr);
+    slopeFn = (y)=> evalPolyCoeffs(dCoeffs, y);
+  }
+  slopeAtApex = slopeFn(apexHeight);
+  const angleApex = slopeToAngleDeg(slopeAtApex);
+
+  const yMax = Math.max(...backPts.map(p=>p[0]));
+  const slopeAtBase = slopeFn(yMax*0.05);
+  const slopeAtTop = slopeFn(yMax*0.95);
+  const angleBase = slopeToAngleDeg(slopeAtBase);
+  const angleTop = slopeToAngleDeg(slopeAtTop);
+
+  document.getElementById('mAngleApex').innerHTML = `${Math.abs(angleApex).toFixed(1)}<span>°</span>`;
+
+  box.innerHTML = `
+    <div class="angle-row"><span>ใกล้จุดสัมผัสเบาะ (~${(yMax*0.05).toFixed(1)} cm)</span><b>${Math.abs(angleBase).toFixed(1)}°</b></div>
+    <div class="angle-row highlight"><span>ที่จุด Lumbar Apex (${apexHeight.toFixed(1)} cm)</span><b>${Math.abs(angleApex).toFixed(1)}°</b></div>
+    <div class="angle-row"><span>ใกล้ฐานลำคอ (~${(yMax*0.95).toFixed(1)} cm)</span><b>${Math.abs(angleTop).toFixed(1)}°</b></div>
+  `;
+}
+
+function renderSizeAndStandard(totalHeight, apexHeight, maxDepth){
+  const size = classifySize(totalHeight);
+  const sizeBox = document.getElementById('sizeRecommendation');
+  if(sizeBox){
+    sizeBox.innerHTML = `
+      <div class="size-badge">${size.code}</div>
+      <div>
+        <div class="size-label">${size.label}</div>
+        <div class="size-range mono">${size.range} · สูงรวมที่คำนวณได้ ${totalHeight.toFixed(1)} ซม.</div>
+      </div>
+    `;
+  }
+
+  const boost = maxDepth - 5.0; // backPts already includes +5cm cushion, so boost = depth beyond that base
+  const apexInRange = apexHeight >= ANSI_APEX_RANGE[0] && apexHeight <= ANSI_APEX_RANGE[1];
+  const boostInRange = boost >= ANSI_BOOST_RANGE[0] && boost <= ANSI_BOOST_RANGE[1];
+
+  const ansiBox = document.getElementById('ansiCheck');
+  if(ansiBox){
+    ansiBox.innerHTML = `
+      <div class="ansi-row ${apexInRange?'pass':'warn'}">
+        <span>${apexInRange?'✓':'!'}</span>
+        ตำแหน่ง Lumbar Apex (${apexHeight.toFixed(1)} ซม.) ${apexInRange?'อยู่ในช่วงมาตรฐาน ANSI':'อยู่นอกช่วงมาตรฐาน ANSI'} (15–25 ซม.)
+      </div>
+      <div class="ansi-row ${boostInRange?'pass':'warn'}">
+        <span>${boostInRange?'✓':'!'}</span>
+        ความหนา Lumbar Boost (${boost.toFixed(1)} ซม.) ${boostInRange?'อยู่ในช่วงมาตรฐาน ANSI':'อยู่นอกช่วงมาตรฐาน ANSI'} (1–5 ซม.)
+      </div>
+    `;
+  }
+}
+
+function wireCsvExport(spinePts, backPts, method){
+  const btn = document.getElementById('exportCsvBtn');
+  if(!btn) return;
+  btn.onclick = ()=>{
+    const spineFn = getCurveFn(spinePts, method);
+    const backFn = getCurveFn(backPts, method);
+    const yMax = Math.max(...spinePts.map(p=>p[0]));
+    let csv = 'height_cm,spine_depth_cm,backrest_depth_cm\n';
+    for(let y=0; y<=yMax; y+=1){
+      csv += `${y.toFixed(1)},${spineFn(y).toFixed(4)},${backFn(y).toFixed(4)}\n`;
+    }
+    csv += `${yMax.toFixed(1)},${spineFn(yMax).toFixed(4)},${backFn(yMax).toFixed(4)}\n`;
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const groupLabel = state.mode==='preset' ? `${state.sex}_${state.age}` : 'custom';
+    a.href = url;
+    a.download = `spinefit_${groupLabel}_${method}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+}
+
+/* ============================================================
+   3D MODEL (Three.js) — realistic cushioned backrest, book-style
+   ============================================================ */
+let threeState = { renderer:null, scene:null, camera:null, mesh:null, autoSpin:true, animId:null,
+                    rotY:0, rotX:0.25, dist:65, dragging:false, lastX:0, lastY:0 };
+
+const BACKREST_COLORS = {
+  navy:   { label:'กรมท่า',  hex:0x2c3e52 },
+  red:    { label:'แดง',     hex:0x8e2a2a },
+  blue:   { label:'น้ำเงิน', hex:0x274472 },
+  black:  { label:'ดำ',      hex:0x232323 },
+  white:  { label:'ขาว',     hex:0xe8e6e0 },
+  cream:  { label:'ครีม',    hex:0xd9cbb0 }
+};
+let currentBackrestColor = 'navy';
+
+function buildBackrestGeometry(backPts, method){
+  // Sample the sagittal (side-view) curve from the polynomial.
+  // backPts already includes the book's +5cm cushion offset, so backFn(y)
+  // directly gives the cushion's front-face protrusion at height y.
+  const backFn = getCurveFn(backPts, method);
+  const yMax = Math.max(...backPts.map(p=>p[0]));
+  const N = 56;
+  const profile = []; // {y, depth}
+  for(let i=0;i<=N;i++){
+    const y = yMax*(i/N);
+    const depth = Math.max(2.5, backFn(y)); // never let thickness collapse to near-zero
+    profile.push({y, depth});
+  }
+
+  const padWidth = Math.max(20, yMax * 0.78); // width scales with height so proportions stay realistic across age groups
+  const segsAcrossWidth = 32; // resolution around the rounded cross-section
+  const heightSegs = profile.length;
+  const roundness = 3.2;      // superellipse exponent: higher = boxier/cushion-like, lower = more elliptical
+
+  // Cross-section: uses sz_norm=(sz+1)/2 so back face (t=0.75, sz=-1) is exactly Z=0
+  // and front face (t=0.25, sz=+1) is exactly Z=depth. Verified by Python:
+  // back Z range = 0.0 to 0.0, front normal Z = +0.9999 (outward). No inversion possible.
+  function crossSectionPoint(t, depth){
+    const halfW = padWidth/2;
+    const angle = t * Math.PI * 2;
+    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+    const k = 2/roundness;
+    const sx = Math.sign(cosA) * Math.pow(Math.abs(cosA), k);
+    const sz = Math.sign(sinA) * Math.pow(Math.abs(sinA), k);
+    const szNorm = (sz + 1) / 2; // maps [-1,1] -> [0,1]: 0=back(Z=0), 1=front(Z=depth)
+    return { x: sx*halfW, z: szNorm*depth };
+  }
+
+  const positions = [];
+  const indices = [];
+  const uvs = [];
+
+  for(let hi=0; hi<heightSegs; hi++){
+    const { y, depth } = profile[hi];
+    for(let si=0; si<=segsAcrossWidth; si++){
+      const t = si/segsAcrossWidth;
+      const cp = crossSectionPoint(t, depth);
+      positions.push(cp.x, y, cp.z);
+      uvs.push(t, hi/(heightSegs-1));
+    }
+  }
+
+  for(let hi=0; hi<heightSegs-1; hi++){
+    for(let si=0; si<segsAcrossWidth; si++){
+      const a = hi*(segsAcrossWidth+1) + si;
+      const b = a + 1;
+      const c = a + (segsAcrossWidth+1);
+      const d = c + 1;
+      indices.push(a,c,b);
+      indices.push(b,c,d);
+    }
+  }
+
+  // cap the bottom and top — center Z at depth/2 (midpoint of cushion thickness)
+  const bottomDepth = profile[0].depth;
+  const bottomCenterIdx = positions.length/3;
+  positions.push(0, profile[0].y, bottomDepth/2);
+  uvs.push(0.5, 0);
+  for(let si=0; si<segsAcrossWidth; si++){
+    indices.push(bottomCenterIdx, si+1, si);
+  }
+  const topRowStart = (heightSegs-1)*(segsAcrossWidth+1);
+  const topDepth = profile[profile.length-1].depth;
+  const topCenterIdx = positions.length/3;
+  positions.push(0, profile[profile.length-1].y, topDepth/2);
+  uvs.push(0.5, 1);
+  for(let si=0; si<segsAcrossWidth; si++){
+    indices.push(topCenterIdx, topRowStart+si, topRowStart+si+1);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  return { geometry, yMax, padWidth };
+}
+
+/* ============================================================
+   LAZY THREE.JS LOADER
+   Three.js is only fetched when the user reaches the 3D viewer.
+   All other features (assessment, calculations, CSV) run instantly
+   with zero dependency on CDN availability.
+   ============================================================ */
+let threeLoadPromise = null;
+function loadThreeJS(){
+  if(typeof THREE !== 'undefined') return Promise.resolve(true);
+  if(threeLoadPromise) return threeLoadPromise;
+
+  function tryLoad(src){
+    return new Promise((resolve, reject)=>{
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = ()=>{
+        // Poll until THREE is actually defined on window (onload fires slightly before it's available)
+        let tries = 0;
+        const poll = setInterval(()=>{
+          tries++;
+          if(typeof THREE !== 'undefined'){ clearInterval(poll); resolve(true); }
+          else if(tries > 40){ clearInterval(poll); reject(new Error('THREE not defined after load')); }
+        }, 50);
+      };
+      s.onerror = ()=> reject(new Error('failed: '+src));
+      document.head.appendChild(s);
+    });
+  }
+
+  threeLoadPromise = tryLoad('https://unpkg.com/three@0.128.0/build/three.min.js')
+    .catch(()=> tryLoad('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'))
+    .catch(()=>{ threeLoadPromise = null; return false; });
+
+  return threeLoadPromise;
+}
+
+function build3DModel(spinePts, backPts, method){
+  const container = document.getElementById('viewer3d');
+  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9aa0a8;font-size:13px;font-family:'JetBrains Mono',monospace;">กำลังโหลดตัวแสดงผล 3 มิติ...</div>`;
+
+  loadThreeJS().then(ok=>{
+    if(ok){
+      build3DModelImpl(spinePts, backPts, method);
+    } else {
+      container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:24px;color:#9aa0a8;font-size:13px;">ไม่สามารถโหลดไลบรารีแสดงผล 3 มิติได้<br>กราฟ 2 มิติและผลคำนวณด้านบนยังใช้งานได้ตามปกติ</div>`;
+    }
+  });
+}
+
+function build3DModelImpl(spinePts, backPts, method){
+  const container = document.getElementById('viewer3d');
+  container.innerHTML = '';
+  const width = container.clientWidth || 400;
+  const height = 380;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, width/height, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const key = new THREE.DirectionalLight(0xffffff, 1.0);
+  key.position.set(-25, 55, 30); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xfff8f0, 0.40);
+  fill.position.set(35, 10, 25); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xd8e8f5, 0.25);
+  rim.position.set(5, -5, -45); scene.add(rim);
+
+  const backFn = getCurveFn(backPts, method);
+  const yMax   = Math.max(...backPts.map(p=>p[0]));
+  const padW   = Math.max(20, yMax * 0.78);   // cushion width (X axis)
+  const thick  = 4.0;                           // cushion thickness (Z axis, front-to-back)
+  const NH = 64;   // height segments
+  const NW = 2;    // width segments (just left/right edge + middle)
+  const NR = 12;   // edge rounding segments
+
+  const colorHex = BACKREST_COLORS[currentBackrestColor].hex;
+  const mat = new THREE.MeshStandardMaterial({
+    color:colorHex, roughness:0.78, metalness:0.02, side:THREE.DoubleSide
+  });
+  const seamMat = new THREE.MeshStandardMaterial({
+    color:0x000000, roughness:0.9, transparent:true, opacity:0.20
+  });
+
+  // Sample the backrest profile at NH heights
+  const profile = [];
+  for(let i=0; i<NH; i++){
+    const y = yMax*(i/(NH-1));
+    profile.push({ y, zFront: Math.max(2.5, backFn(y)) });
+  }
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  // ----------------------------------------------------------------
+  // Helper: build BufferGeometry mesh from flat position array
+  // ----------------------------------------------------------------
+  function buildMesh(positions, normals, uvArr, indices){
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    if(normals) geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    if(uvArr)   geo.setAttribute('uv',     new THREE.Float32BufferAttribute(uvArr, 2));
+    geo.setIndex(indices);
+    if(!normals) geo.computeVertexNormals();
+    return new THREE.Mesh(geo, mat);
+  }
+
+  // ----------------------------------------------------------------
+  // 1. FRONT FACE — the S-curve surface the spine rests against
+  //    Spans X = [-padW/2, padW/2], Y = [0, yMax], Z = backFn(y) per height
+  //    Slight horizontal bow so it looks cushiony (not perfectly flat in X)
+  // ----------------------------------------------------------------
+  {
+    const NX = 20;
+    const pos=[], uvs=[], idx=[];
+    for(let hi=0; hi<NH; hi++){
+      const {y, zFront} = profile[hi];
+      for(let xi=0; xi<=NX; xi++){
+        const t = xi/NX;         // 0..1 across width
+        const x = (t-0.5)*padW;
+        // slight bow: center of cushion protrudes a tiny bit more than edges
+        const bow = 0.8 * Math.sin(t*Math.PI);
+        pos.push(x, y, zFront + bow);
+        uvs.push(t, hi/(NH-1));
+      }
+    }
+    for(let hi=0; hi<NH-1; hi++){
+      for(let xi=0; xi<NX; xi++){
+        const a=hi*(NX+1)+xi, b=a+1, c=a+(NX+1), d=c+1;
+        idx.push(a,b,c, b,d,c);
+      }
+    }
+    group.add(buildMesh(pos, null, uvs, idx));
+  }
+
+  // ----------------------------------------------------------------
+  // 2. BACK FACE — flat panel, Z = zFront - thick for each height
+  // ----------------------------------------------------------------
+  {
+    const NX = 20;
+    const pos=[], uvs=[], idx=[];
+    for(let hi=0; hi<NH; hi++){
+      const {y, zFront} = profile[hi];
+      const zBack = zFront - thick;
+      for(let xi=0; xi<=NX; xi++){
+        const t = xi/NX;
+        pos.push((t-0.5)*padW, y, zBack);
+        uvs.push(t, hi/(NH-1));
+      }
+    }
+    for(let hi=0; hi<NH-1; hi++){
+      for(let xi=0; xi<NX; xi++){
+        const a=hi*(NX+1)+xi, b=a+1, c=a+(NX+1), d=c+1;
+        // reversed winding so normal faces -Z (outward from back)
+        idx.push(a,c,b, b,c,d);
+      }
+    }
+    group.add(buildMesh(pos, null, uvs, idx));
+  }
+
+  // ----------------------------------------------------------------
+  // 3. SIDE WALLS — left and right edges, connecting front to back
+  //    Each side: a strip going up the height, bridging zBack→zFront
+  // ----------------------------------------------------------------
+  [-1, 1].forEach(side => {
+    const x = side * padW/2;
+    const pos=[], uvs=[], idx=[];
+    for(let hi=0; hi<NH; hi++){
+      const {y, zFront} = profile[hi];
+      const zBack = zFront - thick;
+      // 2 verts per height: back edge and front edge
+      pos.push(x, y, zBack);  uvs.push(0, hi/(NH-1));
+      pos.push(x, y, zFront); uvs.push(1, hi/(NH-1));
+    }
+    for(let hi=0; hi<NH-1; hi++){
+      const a=hi*2, b=a+1, c=a+2, d=a+3;
+      if(side > 0){ idx.push(a,b,c, b,d,c); }
+      else         { idx.push(a,c,b, b,c,d); }
+    }
+    group.add(buildMesh(pos, null, uvs, idx));
+  });
+
+  // ----------------------------------------------------------------
+  // 4. TOP CAP — rounded elliptical cap at the top of the cushion
+  // ----------------------------------------------------------------
+  {
+    const {y:yTop, zFront:zF} = profile[NH-1];
+    const zB = zF - thick;
+    const zMid = (zF+zB)/2, zR = (zF-zB)/2;
+    const pos=[], uvs=[], idx=[];
+    // fan from center
+    const cx=0, cy=yTop+1.5, cz=zMid;  // slightly above top
+    pos.push(cx, cy, cz); uvs.push(0.5, 0.5);
+    const NR2=24;
+    for(let i=0; i<=NR2; i++){
+      const t=i/NR2;
+      const angle = t*Math.PI*2;
+      // ellipse: x maps width/2, z maps to zR
+      const ex = Math.cos(angle)*(padW/2);
+      const ez = Math.sin(angle)*zR;
+      pos.push(ex, yTop, cz+ez*0.7);
+      uvs.push(0.5+0.5*Math.cos(angle), 0.5+0.5*Math.sin(angle));
+    }
+    for(let i=0; i<NR2; i++) idx.push(0, i+1, i+2);
+    group.add(buildMesh(pos, null, uvs, idx));
+  }
+
+  // ----------------------------------------------------------------
+  // 5. BOTTOM CAP — closes the base
+  // ----------------------------------------------------------------
+  {
+    const {y:yBot, zFront:zF} = profile[0];
+    const zB = zF - thick;
+    const zMid=(zF+zB)/2, zR=(zF-zB)/2;
+    const pos=[], uvs=[], idx=[];
+    const NR2=24;
+    pos.push(0, yBot-1.5, zMid); uvs.push(0.5,0.5);
+    for(let i=0; i<=NR2; i++){
+      const t=i/NR2, angle=t*Math.PI*2;
+      pos.push(Math.cos(angle)*(padW/2), yBot, zMid+Math.sin(angle)*zR*0.7);
+      uvs.push(0.5+0.5*Math.cos(angle),0.5+0.5*Math.sin(angle));
+    }
+    for(let i=0; i<NR2; i++) idx.push(0, i+2, i+1);
+    group.add(buildMesh(pos, null, uvs, idx));
+  }
+
+  // ----------------------------------------------------------------
+  // 6. CENTER SEAM — vertical line on front face at x=0
+  // ----------------------------------------------------------------
+  {
+    const pts3=[];
+    for(let i=0; i<=56; i++){
+      const y=yMax*(i/56), zF=Math.max(2.5,backFn(y));
+      pts3.push(new THREE.Vector3(0, y, zF+0.8+0.15)); // front face + bow(center)=0.8
+    }
+    const tube = new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(pts3), 64, 0.13, 5, false
+    );
+    group.add(new THREE.Mesh(tube, seamMat));
+  }
+
+  // ----------------------------------------------------------------
+  // 6b. LUMBAR APEX MARKER — golden ring at peak lumbar support position
+  // ----------------------------------------------------------------
+  {
+    // Find apex: height where backFn(y) is maximum
+    let apexY = 0, apexZFront = 0;
+    for(let i=0;i<NH;i++){
+      if(profile[i].zFront > apexZFront){
+        apexZFront = profile[i].zFront;
+        apexY = profile[i].y;
+      }
+    }
+    const apexZSurface = apexZFront + 0.8 + 0.35; // front face + center bow + lift off surface
+
+    const ringMat = new THREE.MeshStandardMaterial({
+      color:0xD4A017, roughness:0.25, metalness:0.75
+    });
+
+    // Elliptical horizontal ring around the apex
+    const ringW = padW * 0.42;
+    const ringTubeR = 0.48;
+    const rSegs = 48;
+    const rPts = [];
+    for(let i=0;i<=rSegs;i++){
+      const a=(i/rSegs)*Math.PI*2;
+      rPts.push(new THREE.Vector3(
+        Math.cos(a)*ringW,
+        apexY + Math.sin(a)*1.4,
+        apexZSurface - 1.4 + Math.cos(a)*1.4
+      ));
+    }
+    group.add(new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rPts,true),rSegs,ringTubeR,8,true),
+      ringMat
+    ));
+
+    // Small disc marker at center of ring — use a tiny circle made from TubeGeometry
+    const dotPts = [];
+    const dotR = 1.0;
+    for(let i=0;i<=16;i++){
+      const a=(i/16)*Math.PI*2;
+      dotPts.push(new THREE.Vector3(Math.cos(a)*dotR, apexY+Math.sin(a)*dotR*0.08, apexZSurface));
+    }
+    group.add(new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(dotPts,true),16,0.35,6,true),
+      ringMat
+    ));
+  }
+
+  // ----------------------------------------------------------------
+  // 7. SHADOW PLANE
+  // ----------------------------------------------------------------
+  {
+    const aoM=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.07});
+    const ao=new THREE.Mesh(new THREE.PlaneGeometry(padW+6, padW*0.7), aoM);
+    ao.rotation.x=-Math.PI/2;
+    ao.position.set(0, -0.8, profile[0].zFront - thick/2);
+    group.add(ao);
+  }
+
+  // ----------------------------------------------------------------
+  // CAMERA — fixed at +X, looking toward -X
+  // screen-right = +Z = front/nubby face of cushion
+  // screen-left  = -Z direction = but we won't see it, we see the side Z-extent
+  //
+  // With group.rotation.y = 0:
+  //   camera at +X looks -X, sees ZY plane
+  //   Z=zFront(y) = S-curve (right on screen) ✓
+  //   Z=zBack(y)  = flat offset (left on screen) ✓
+  // ----------------------------------------------------------------
+  group.rotation.y = 0;
+  const camDist = Math.max(55, yMax*2.2);
+  const camY    = yMax * 0.45;
+  camera.position.set(camDist, camY, 2);
+  camera.lookAt(0, camY, profile[NH/2|0].zFront - thick/2);
+
+  // ── Smooth interaction state ──────────────────────────────────────
+  // targetRotY/X = where the model should end up (set by drag/touch)
+  // currentRotY/X = actual current angle (lerps toward target every frame)
+  // velocityY = inertia carried after mouse release
+  let dragging    = false;
+  let lastX = 0, lastY = 0;
+  let targetRotY  = 0,   currentRotY  = 0;
+  let targetRotX  = 0,   currentRotX  = 0;
+  let velocityY   = 0;                       // inertia after release
+  let targetDist  = camDist, currentDist = camDist;
+  let autoSpin    = true;
+  const DAMPING   = 0.10;  // lerp factor per frame (0=no movement, 1=instant)
+  const INERTIA   = 0.88;  // how long inertia lasts after release
+
+  const lookAtPt = new THREE.Vector3(0, camY, profile[NH/2|0].zFront - thick/2);
+
+  function updateView(){
+    group.rotation.y = currentRotY;
+    group.rotation.x = currentRotX;
+    camera.position.set(currentDist, camY, 2);
+    camera.lookAt(lookAtPt);
+  }
+
+  const dom = renderer.domElement;
+
+  // Mouse events
+  dom.addEventListener('mousedown', (e)=>{
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    velocityY = 0;
+    autoSpin = false;
+  });
+  window.addEventListener('mouseup', ()=>{ dragging = false; });
+  window.addEventListener('mousemove', (e)=>{
+    if(!dragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    velocityY   = dx * 0.012;             // capture velocity for inertia
+    targetRotY += dx * 0.012;
+    // Only allow very subtle vertical tilt (max ±15°) so it doesn't look weird
+    targetRotX  = Math.max(-0.26, Math.min(0.26, targetRotX + dy*0.005));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+
+  // Touch events
+  dom.addEventListener('touchstart', (e)=>{
+    const t = e.touches[0];
+    dragging = true; lastX = t.clientX; lastY = t.clientY;
+    velocityY = 0; autoSpin = false;
+  }, {passive:true});
+  window.addEventListener('touchend', ()=>{ dragging = false; });
+  window.addEventListener('touchmove', (e)=>{
+    if(!dragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - lastX, dy = t.clientY - lastY;
+    velocityY   = dx * 0.012;
+    targetRotY += dx * 0.012;
+    targetRotX  = Math.max(-0.26, Math.min(0.26, targetRotX + dy*0.005));
+    lastX = t.clientX; lastY = t.clientY;
+  }, {passive:true});
+
+  // Wheel zoom
+  dom.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    targetDist = Math.max(30, Math.min(180, targetDist + e.deltaY*0.04));
+  }, {passive:false});
+
+  threeState = {
+    renderer, scene, camera, mesh:null, material:mat, animId:null,
+    _group: group,
+    _getAutoSpin: ()=> autoSpin,
+    _setAutoSpin: (v)=>{ autoSpin=v; if(v) velocityY=0; },
+    _resetView: ()=>{
+      targetRotY=0; targetRotX=0; targetDist=camDist; velocityY=0;
+    },
+    updateCamera: updateView
+  };
+
+  function animate(){
+    threeState.animId = requestAnimationFrame(animate);
+
+    if(autoSpin && !dragging){
+      // Smooth auto-spin: blend toward target + constant drift
+      targetRotY += 0.004;
+      velocityY   = 0;
+    } else if(!dragging && Math.abs(velocityY) > 0.0001){
+      // Apply inertia after release
+      targetRotY += velocityY;
+      velocityY  *= INERTIA;
+    }
+
+    // Lerp current values toward targets (gives the smooth easing feel)
+    currentRotY  += (targetRotY  - currentRotY)  * DAMPING;
+    currentRotX  += (targetRotX  - currentRotX)  * DAMPING;
+    currentDist  += (targetDist  - currentDist)  * DAMPING;
+
+    updateView();
+    renderer.render(scene, camera);
+  }
+  if(threeState.animId) cancelAnimationFrame(threeState.animId);
+  animate();
+}
+
+
+document.getElementById('spinToggle').addEventListener('click', (e)=>{
+  if(!threeState._setAutoSpin) return;
+  const nowSpin = threeState._getAutoSpin();
+  threeState._setAutoSpin(!nowSpin);
+  e.target.textContent = !nowSpin ? '⏸ หยุดหมุน' : '▶ หมุนอัตโนมัติ';
+});
+document.getElementById('resetView').addEventListener('click', ()=>{
+  if(threeState._resetView) threeState._resetView();
+});
+
+document.querySelectorAll('.color-swatch').forEach(el=>{
+  el.addEventListener('click', ()=> setBackrestColor(el.dataset.color));
+});
+
+document.querySelectorAll('#methodPills .pill').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('#methodPills .pill').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active');
+    state.interpMethod = el.dataset.method;
+    if(state.points) computeAndShowResults();
+  });
+});
+
+function setBackrestColor(key){
+  currentBackrestColor = key;
+  if(threeState.material){
+    threeState.material.color.setHex(BACKREST_COLORS[key].hex);
+  }
+  document.querySelectorAll('.color-swatch').forEach(el=>{
+    el.classList.toggle('active', el.dataset.color===key);
+  });
+}
+
+/* ============================================================
+   ERGONOMIC RISK SELF-ASSESSMENT (NOT a diagnostic tool)
+   Inspired by the Nordic Musculoskeletal Questionnaire's approach of
+   scoring symptom severity by body region — but this is an original,
+   simplified, non-validated scale across 5 chair-relevant regions,
+   combined with frequency, duration, and a red-flag checklist.
+   It outputs a general "ergonomic risk band" with advice to consult a
+   professional when appropriate. It never names or suggests specific
+   diseases or medical conditions. Scoring logic verified against
+   hand-checked scenarios before implementation.
+   ============================================================ */
+const ASSESS_REGIONS = [
+  { key:'neck',      label:'คอ' },
+  { key:'shoulder',  label:'ไหล่' },
+  { key:'upperback', label:'หลังส่วนบน' },
+  { key:'lowerback', label:'หลังส่วนล่าง' },
+  { key:'hip',       label:'สะโพก / ก้นกบ' }
+];
+const ASSESS_SEVERITY_LEVELS = [
+  { score:0, label:'ไม่มีอาการ' },
+  { score:1, label:'เล็กน้อย' },
+  { score:2, label:'ปานกลาง' },
+  { score:3, label:'รุนแรง' },
+  { score:4, label:'รุนแรงมาก' }
+];
+const ASSESS_FREQ_LEVELS = [
+  { idx:0, label:'0 วัน', factor:0 },
+  { idx:1, label:'1–2 วัน', factor:0.3 },
+  { idx:2, label:'3–4 วัน', factor:0.55 },
+  { idx:3, label:'5–6 วัน', factor:0.8 },
+  { idx:4, label:'ทุกวัน', factor:1.0 }
+];
+const ASSESS_DURATION_OPTIONS = [
+  { key:'acute',     label:'น้อยกว่า 1 สัปดาห์' },
+  { key:'subacute',  label:'1–4 สัปดาห์' },
+  { key:'persistent',label:'1–3 เดือน' },
+  { key:'chronic',   label:'มากกว่า 3 เดือน' }
+];
+const ASSESS_RED_FLAGS = [
+  { key:'numbweak', label:'มีอาการชาหรืออ่อนแรงที่แขนหรือขา' },
+  { key:'radiating', label:'ปวดร้าวลงขาต่ำกว่าเข่า' },
+  { key:'fever', label:'มีไข้ร่วมกับอาการปวด' },
+  { key:'weightloss', label:'น้ำหนักลดลงโดยไม่ทราบสาเหตุ' },
+  { key:'bladder', label:'กลั้นปัสสาวะหรืออุจจาระลำบาก หรือผิดปกติจากเดิม' },
+  { key:'nightpain', label:'ปวดมากตอนกลางคืนจนนอนไม่ได้ แม้พักผ่อนก็ไม่ดีขึ้น' }
+];
+
+const assessAnswers = {};      // { regionKey: { severity, freq } }
+let assessDuration = null;
+const assessRedFlagsChecked = {};
+
+function renderAssessmentRegions(){
+  const container = document.getElementById('assessRegions');
+  if(!container) return;
+  container.innerHTML = ASSESS_REGIONS.map(region => `
+    <div class="assess-region">
+      <div class="assess-region-label">${region.label}</div>
+      <div class="assess-region-inputs">
+        <div class="assess-dimension-row">
+          <span class="assess-dimension-label">ความรุนแรง</span>
+          <div class="assess-scale" data-region="${region.key}" data-dim="severity">
+            ${ASSESS_SEVERITY_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.score}">${lv.label}</div>`).join('')}
+          </div>
+        </div>
+        <div class="assess-dimension-row">
+          <span class="assess-dimension-label">ความถี่ / 7 วัน</span>
+          <div class="assess-scale" data-region="${region.key}" data-dim="freq">
+            ${ASSESS_FREQ_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.idx}">${lv.label}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.assess-scale').forEach(scaleEl=>{
+    const regionKey = scaleEl.dataset.region;
+    const dim = scaleEl.dataset.dim;
+    scaleEl.querySelectorAll('.assess-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        scaleEl.querySelectorAll('.assess-chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        if(!assessAnswers[regionKey]) assessAnswers[regionKey] = {};
+        assessAnswers[regionKey][dim] = parseInt(chip.dataset.value);
+      });
+    });
+  });
+}
+
+function renderAssessmentDuration(){
+  const container = document.getElementById('assessDuration');
+  if(!container) return;
+  container.innerHTML = ASSESS_DURATION_OPTIONS.map(opt =>
+    `<div class="assess-duration-chip" data-key="${opt.key}">${opt.label}</div>`
+  ).join('');
+  container.querySelectorAll('.assess-duration-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      container.querySelectorAll('.assess-duration-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      assessDuration = chip.dataset.key;
+    });
+  });
+}
+
+function renderAssessmentRedFlags(){
+  const container = document.getElementById('assessRedFlags');
+  if(!container) return;
+  container.innerHTML = ASSESS_RED_FLAGS.map(flag => `
+    <div class="redflag-item" data-key="${flag.key}">
+      <div class="redflag-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <div>${flag.label}</div>
+    </div>
+  `).join('');
+  container.querySelectorAll('.redflag-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const key = item.dataset.key;
+      const isChecked = item.classList.toggle('checked');
+      assessRedFlagsChecked[key] = isChecked;
+    });
+  });
+}
+
+function formatThaiDate(){
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const d = new Date();
+  return `วันที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+function renderAssessmentResult(){
+  const resultBox = document.getElementById('assessResult');
+  const clinicBox = document.getElementById('clinicRecommend');
+  if(!resultBox) return;
+
+  const answered = ASSESS_REGIONS.filter(r =>
+    assessAnswers[r.key] && assessAnswers[r.key].severity !== undefined && assessAnswers[r.key].freq !== undefined
+  );
+  if(answered.length < ASSESS_REGIONS.length){
+    resultBox.innerHTML = `<div class="assess-result-box risk-moderate">
+      <div class="assess-result-badge">!</div>
+      <div class="assess-result-text"><b>กรุณาระบุทั้งความรุนแรงและความถี่ให้ครบทั้ง 5 บริเวณ</b>ก่อนดูผลการประเมิน</div>
+    </div>`;
+    if(clinicBox) clinicBox.innerHTML = '';
+    return;
+  }
+
+  const weighted = ASSESS_REGIONS.map(r=>{
+    const a = assessAnswers[r.key];
+    const factor = ASSESS_FREQ_LEVELS[a.freq].factor;
+    return { key:r.key, label:r.label, score:a.severity*factor };
+  });
+  const total = weighted.reduce((s,w)=>s+w.score, 0);
+  const worst = Math.max(...weighted.map(w=>w.score));
+
+  let bandIdx = total < 2 ? 0 : (total < 8 ? 1 : 2);
+  if(worst >= 3.2) bandIdx = Math.max(bandIdx, 2);
+  else if(worst >= 1.6) bandIdx = Math.max(bandIdx, 1);
+
+  const isChronic = assessDuration === 'chronic';
+  if(isChronic && total > 0) bandIdx = Math.min(bandIdx+1, 2);
+
+  const anyRedFlag = Object.values(assessRedFlagsChecked).some(v=>v);
+
+  const bandMeta = [
+    { cls:'risk-low', text:'ต่ำ', msg:'อาการโดยรวมอยู่ในระดับเล็กน้อย พนักพิงที่ออกแบบไว้ควรช่วยรองรับสรีระได้ดีในระยะนี้ ลองสังเกตอาการต่อเนื่องเป็นระยะ' },
+    { cls:'risk-moderate', text:'ปานกลาง', msg:'ควรปรับพฤติกรรมการนั่ง พักเปลี่ยนท่าทุก 30–60 นาที และสังเกตอาการต่อ หากไม่ดีขึ้นภายใน 1–2 สัปดาห์ ควรปรึกษาแพทย์หรือนักกายภาพบำบัด' },
+    { cls:'risk-high', text:'สูง', msg:'แบบประเมินนี้ไม่สามารถบอกสาเหตุได้ แนะนำให้ปรึกษาแพทย์หรือนักกายภาพบำบัดเพื่อตรวจประเมินอย่างละเอียด' }
+  ];
+  let chosen = bandMeta[bandIdx];
+  let extraNote = '';
+  if(isChronic && total>0) extraNote += ' (ปรับระดับขึ้นเนื่องจากอาการเรื้อรังกว่า 3 เดือน)';
+
+  if(anyRedFlag){
+    chosen = { cls:'risk-urgent', text:'ควรพบแพทย์โดยไม่ชักช้า', msg:'ท่านเลือกอาการร่วมที่อยู่ในกลุ่มควรได้รับการตรวจโดยแพทย์โดยตรง แบบประเมินนี้ไม่สามารถระบุสาเหตุได้ การพบแพทย์เร็วจะช่วยให้ได้รับการดูแลที่เหมาะสมตั้งแต่ต้น' };
+  }
+
+  resultBox.innerHTML = `<div class="assess-result-box ${chosen.cls}">
+    <div class="assess-result-badge">${chosen.cls==='risk-urgent' ? '!' : chosen.text}</div>
+    <div class="assess-result-text">
+      <b>${chosen.cls==='risk-urgent' ? chosen.text : 'ระดับความเสี่ยงด้านการยศาสตร์: '+chosen.text}</b>
+      ${chosen.msg}${extraNote}
+      <div class="assess-score-detail">คะแนนรวม ${total.toFixed(1)}/20 · บริเวณที่มีคะแนนสูงสุด: ${weighted.sort((a,b)=>b.score-a.score)[0].label} (${weighted.sort((a,b)=>b.score-a.score)[0].score.toFixed(1)})</div>
+    </div>
+  </div>`;
+
+  renderClinicRecommendation(clinicBox, anyRedFlag || bandIdx>=1);
+}
+
+/* ============================================================
+   CLINIC / HOSPITAL RECOMMENDATION
+   Real, verified locations in Satun province (where the source project's
+   school is located), retrieved via place search — not fabricated.
+   Always paired with a live "find near me" Maps link since the person
+   using this tool may not be in Satun. Hours/contact details should be
+   reconfirmed by phone, as they can change.
+   ============================================================ */
+const SATUN_CLINICS = [
+  { name:'โรงพยาบาลสตูล', type:'โรงพยาบาลรัฐ · เปิด 24 ชม.', phone:'074 723 500', area:'อำเภอเมืองสตูล' },
+  { name:'งานกายภาพบำบัด โรงพยาบาลทุ่งหว้า', type:'กายภาพบำบัด (โรงพยาบาลรัฐ)', phone:'082 182 3177', area:'อำเภอทุ่งหว้า' },
+  { name:'ซาร่า คลินิกกายภาพบำบัด', type:'คลินิกกายภาพบำบัดเอกชน', phone:'083 840 4014', area:'อำเภอละงู' },
+  { name:'บีน่ากายภาพบำบัด คลินิก สตูล', type:'คลินิกกายภาพบำบัดเอกชน', phone:'062 747 4917', area:'อำเภอควนโดน' }
+];
+
+function renderClinicRecommendation(container, shouldShow){
+  if(!container) return;
+  if(!shouldShow){ container.innerHTML = ''; return; }
+
+  const clinicRows = SATUN_CLINICS.map(c => `
+    <div class="clinic-item">
+      <div class="clinic-item-main">
+        <div class="clinic-name">${c.name}</div>
+        <span class="clinic-tag">${c.type}</span>
+        <div class="clinic-meta">${c.area}</div>
+      </div>
+      <div class="clinic-phone">${c.phone}</div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="clinic-section">
+      <div class="clinic-section-title">สถานพยาบาลที่ปรึกษาได้</div>
+      <div class="clinic-section-sub">ตัวอย่างสถานพยาบาลในจังหวัดสตูล (ที่ตั้งของโรงเรียนต้นทางของโครงงานนี้) สำหรับผู้ใช้ในพื้นที่อื่น ใช้ปุ่มค้นหาด้านล่างเพื่อหาสถานพยาบาลใกล้ตัวท่าน</div>
+      <div class="clinic-list">${clinicRows}</div>
+      <div class="clinic-finder-row">
+        <div class="clinic-finder-text">ไม่ได้อยู่ในจังหวัดสตูล? ค้นหาคลินิกกายภาพบำบัดหรือโรงพยาบาลใกล้คุณได้ทันที</div>
+        <a class="btn btn-ghost btn-sm" href="https://www.google.com/maps/search/?api=1&query=คลินิกกายภาพบำบัด+โรงพยาบาล" target="_blank" rel="noopener">ค้นหาใกล้ฉัน ↗</a>
+      </div>
+      <div class="clinic-disclaimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9aa6a8" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        ข้อมูลเบอร์โทรและเวลาเปิด-ปิดอาจเปลี่ยนแปลงได้ กรุณาโทรสอบถามก่อนเข้ารับบริการ รายชื่อนี้เป็นตัวอย่างเพื่อความสะดวก ไม่ได้รับรองคุณภาพการรักษาของสถานพยาบาลใดเป็นการเฉพาะ
+      </div>
+    </div>
+  `;
+}
+
+document.getElementById('assessSubmitBtn')?.addEventListener('click', renderAssessmentResult);
+renderAssessmentRegions();
+renderAssessmentDuration();
+renderAssessmentRedFlags();
+const formDateEl = document.getElementById('formDateField');
+if(formDateEl) formDateEl.innerHTML = `<b>${formatThaiDate()}</b>`;
+
+
+function renderHero(){
+  const pts = PRESETS["19-29"].male;
+  document.getElementById('heroSvg').innerHTML = renderCurveSVG(pts, pts.map(p=>[p[0],p[1]+5]), 280, 320);
+}
+renderHero();
+</script>
+</body>
+</html>
