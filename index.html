@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SpineFit — ออกแบบพนักพิงเก้าอี้เฉพาะบุคคล</title>
+<meta name="description" content="เครื่องมือคำนวณเส้นโค้งพนักพิงเก้าอี้จากจุดพิกัดสรีระ 6 จุด ด้วย Polynomial Interpolation กรอกข้อมูลของคุณแล้วดูกราฟและโมเดล 3 มิติที่คำนวณขึ้นเฉพาะสำหรับคุณ">
+<meta property="og:title" content="SpineFit — ออกแบบพนักพิงเก้าอี้เฉพาะบุคคล">
+<meta property="og:description" content="เครื่องมือคำนวณเส้นโค้งพนักพิงเก้าอี้จากจุดพิกัดสรีระ 6 จุด ด้วย Polynomial Interpolation">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' rx='5' fill='%231A2332'/%3E%3Cpath d='M6 3 C6 9, 14 10, 14 15 C14 19, 9 19, 9 22' stroke='%232D6E7E' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root{
   --navy:#1A2332;
@@ -938,6 +943,12 @@ footer{
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:0.01ms !important; }
 }
+
+/* Visible focus ring for div-based controls (mode cards, pills, chips, swatches) */
+[role="button"]:focus-visible, [role="checkbox"]:focus-visible{
+  outline: 2px solid var(--terracotta);
+  outline-offset: 2px;
+}
 </style>
 </head>
 <body>
@@ -1002,7 +1013,7 @@ footer{
     </div>
 
     <div class="mode-grid">
-      <div class="mode-card" data-mode="manual" id="cardManual">
+      <div class="mode-card" data-mode="manual" id="cardManual" role="button" tabindex="0" aria-pressed="false">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="1.6"><circle cx="5" cy="19" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="9" cy="10" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="14" cy="6" r="1.6" fill="#2D6E7E" stroke="none"/><circle cx="19" cy="13" r="1.6" fill="#2D6E7E" stroke="none"/><path d="M5 19 L9 10 L14 6 L19 13" stroke-dasharray="2 2"/></svg>
         </div>
@@ -1011,7 +1022,7 @@ footer{
         <span class="tag">Manual · 6 points</span>
       </div>
 
-      <div class="mode-card" data-mode="preset" id="cardPreset">
+      <div class="mode-card" data-mode="preset" id="cardPreset" role="button" tabindex="0" aria-pressed="false">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A2332" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1" fill="#2D6E7E" stroke="none"/></svg>
         </div>
@@ -1121,8 +1132,8 @@ footer{
     <div class="method-toggle-row">
       <span class="method-toggle-label">วิธีการประมาณค่า</span>
       <div class="pill-row" id="methodPills">
-        <div class="pill active" data-method="lagrange">Lagrange Interpolation (ดีกรี 5)</div>
-        <div class="pill" data-method="spline">Natural Cubic Spline</div>
+        <div class="pill active" data-method="lagrange" role="button" tabindex="0" aria-pressed="true">Lagrange Interpolation (ดีกรี 5)</div>
+        <div class="pill" data-method="spline" role="button" tabindex="0" aria-pressed="false">Natural Cubic Spline</div>
       </div>
       <span class="method-hint">Cubic Spline ไม่เกิดการแกว่งตัวแบบ Runge's Phenomenon โดยทฤษฎี</span>
     </div>
@@ -1152,12 +1163,12 @@ footer{
           </div>
           <div class="color-picker" id="colorPicker">
             <span class="color-picker-label">สีพนักพิง</span>
-            <div class="color-swatch active" data-color="navy" style="background:#2c3e52" title="กรมท่า"></div>
-            <div class="color-swatch" data-color="red" style="background:#8e2a2a" title="แดง"></div>
-            <div class="color-swatch" data-color="blue" style="background:#274472" title="น้ำเงิน"></div>
-            <div class="color-swatch" data-color="black" style="background:#232323" title="ดำ"></div>
-            <div class="color-swatch" data-color="white" style="background:#e8e6e0; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);" title="ขาว"></div>
-            <div class="color-swatch" data-color="cream" style="background:#d9cbb0" title="ครีม"></div>
+            <div class="color-swatch active" data-color="navy" style="background:#2c3e52" title="กรมท่า" role="button" tabindex="0" aria-label="สีกรมท่า" aria-pressed="true"></div>
+            <div class="color-swatch" data-color="red" style="background:#8e2a2a" title="แดง" role="button" tabindex="0" aria-label="สีแดง" aria-pressed="false"></div>
+            <div class="color-swatch" data-color="blue" style="background:#274472" title="น้ำเงิน" role="button" tabindex="0" aria-label="สีน้ำเงิน" aria-pressed="false"></div>
+            <div class="color-swatch" data-color="black" style="background:#232323" title="ดำ" role="button" tabindex="0" aria-label="สีดำ" aria-pressed="false"></div>
+            <div class="color-swatch" data-color="white" style="background:#e8e6e0; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);" title="ขาว" role="button" tabindex="0" aria-label="สีขาว" aria-pressed="false"></div>
+            <div class="color-swatch" data-color="cream" style="background:#d9cbb0" title="ครีม" role="button" tabindex="0" aria-label="สีครีม" aria-pressed="false"></div>
           </div>
         </div>
       </div>
@@ -1630,14 +1641,14 @@ function buildFormPage(){
       <div class="field-group">
         <label>เพศ</label>
         <div class="pill-row" id="sexPills">
-          <div class="pill active" data-val="male">ชาย</div>
-          <div class="pill" data-val="female">หญิง</div>
+          <div class="pill active" data-val="male" role="button" tabindex="0" aria-pressed="true">ชาย</div>
+          <div class="pill" data-val="female" role="button" tabindex="0" aria-pressed="false">หญิง</div>
         </div>
       </div>
       <div class="field-group">
         <label>ช่วงอายุ</label>
         <div class="pill-row" id="agePills">
-          ${Object.keys(AGE_LABELS).map(k=>`<div class="pill ${k==='19-29'?'active':''}" data-val="${k}">${AGE_LABELS[k]}</div>`).join('')}
+          ${Object.keys(AGE_LABELS).map(k=>`<div class="pill ${k==='19-29'?'active':''}" data-val="${k}" role="button" tabindex="0" aria-pressed="${k==='19-29'}">${AGE_LABELS[k]}</div>`).join('')}
         </div>
       </div>
       <div class="helper" style="margin-top:8px;">ค่าพิกัดที่ใช้คำนวณจะแสดงในตารางด้านล่าง สามารถปรับแก้เพิ่มเติมได้</div>
@@ -1647,16 +1658,18 @@ function buildFormPage(){
     `;
     document.querySelectorAll('#sexPills .pill').forEach(p=>{
       p.addEventListener('click', ()=>{
-        document.querySelectorAll('#sexPills .pill').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('#sexPills .pill').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
         p.classList.add('active');
+        p.setAttribute('aria-pressed','true');
         state.sex = p.dataset.val;
         renderPresetTable();
       });
     });
     document.querySelectorAll('#agePills .pill').forEach(p=>{
       p.addEventListener('click', ()=>{
-        document.querySelectorAll('#agePills .pill').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('#agePills .pill').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-pressed','false');});
         p.classList.add('active');
+        p.setAttribute('aria-pressed','true');
         state.age = p.dataset.val;
         renderPresetTable();
       });
@@ -1697,11 +1710,44 @@ function readPointsFromForm(){
   return pts;
 }
 
+/* ============================================================
+   POINT VALIDATION
+   The interpolation math (Lagrange/spline) assumes y (height) is
+   strictly increasing point-to-point, and depth is a physical
+   protrusion distance that can't be negative — neither is checked
+   by parseFloat/isNaN alone, so bad input silently produced a
+   garbled curve before this existed.
+   ============================================================ */
+function validatePoints(pts){
+  for(let i=0;i<pts.length;i++){
+    if(pts[i][1] < 0){
+      return { valid:false, message:`จุดที่ ${i+1}: ค่า Depth (X) ต้องไม่ติดลบ` };
+    }
+  }
+  for(let i=1;i<pts.length;i++){
+    if(pts[i][0] <= pts[i-1][0]){
+      return { valid:false, message:`จุดที่ ${i+1}: ค่า Distance (Y) ต้องมากกว่าจุดที่ ${i} เสมอ (เรียงจากล่างขึ้นบน)` };
+    }
+  }
+  return { valid:true, message:'' };
+}
+
 function updateLivePreview(){
   const pts = readPointsFromForm();
   const btn = document.getElementById('toResults');
   const stage = document.getElementById('livePreviewStage');
   if(!pts){ btn.disabled = true; return; }
+
+  const check = validatePoints(pts);
+  if(!check.valid){
+    btn.disabled = true;
+    stage.innerHTML = `<div class="preview-placeholder" style="color:#E8654F;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <div>${check.message}</div>
+    </div>`;
+    return;
+  }
+
   btn.disabled = false;
   state.points = pts;
   stage.innerHTML = `<svg viewBox="0 0 300 340" style="width:100%;max-width:320px;">${renderCurveSVG(pts, null, 300, 340)}</svg>`;
@@ -2580,13 +2626,13 @@ function renderAssessmentRegions(){
         <div class="assess-dimension-row">
           <span class="assess-dimension-label">ความรุนแรง</span>
           <div class="assess-scale" data-region="${region.key}" data-dim="severity">
-            ${ASSESS_SEVERITY_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.score}">${lv.label}</div>`).join('')}
+            ${ASSESS_SEVERITY_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.score}" role="button" tabindex="0" aria-pressed="false">${lv.label}</div>`).join('')}
           </div>
         </div>
         <div class="assess-dimension-row">
           <span class="assess-dimension-label">ความถี่ / 7 วัน</span>
           <div class="assess-scale" data-region="${region.key}" data-dim="freq">
-            ${ASSESS_FREQ_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.idx}">${lv.label}</div>`).join('')}
+            ${ASSESS_FREQ_LEVELS.map(lv => `<div class="assess-chip" data-value="${lv.idx}" role="button" tabindex="0" aria-pressed="false">${lv.label}</div>`).join('')}
           </div>
         </div>
       </div>
@@ -2598,8 +2644,9 @@ function renderAssessmentRegions(){
     const dim = scaleEl.dataset.dim;
     scaleEl.querySelectorAll('.assess-chip').forEach(chip=>{
       chip.addEventListener('click', ()=>{
-        scaleEl.querySelectorAll('.assess-chip').forEach(c=>c.classList.remove('active'));
+        scaleEl.querySelectorAll('.assess-chip').forEach(c=>{c.classList.remove('active'); c.setAttribute('aria-pressed','false');});
         chip.classList.add('active');
+        chip.setAttribute('aria-pressed','true');
         if(!assessAnswers[regionKey]) assessAnswers[regionKey] = {};
         assessAnswers[regionKey][dim] = parseInt(chip.dataset.value);
       });
@@ -2611,12 +2658,13 @@ function renderAssessmentDuration(){
   const container = document.getElementById('assessDuration');
   if(!container) return;
   container.innerHTML = ASSESS_DURATION_OPTIONS.map(opt =>
-    `<div class="assess-duration-chip" data-key="${opt.key}">${opt.label}</div>`
+    `<div class="assess-duration-chip" data-key="${opt.key}" role="button" tabindex="0" aria-pressed="false">${opt.label}</div>`
   ).join('');
   container.querySelectorAll('.assess-duration-chip').forEach(chip=>{
     chip.addEventListener('click', ()=>{
-      container.querySelectorAll('.assess-duration-chip').forEach(c=>c.classList.remove('active'));
+      container.querySelectorAll('.assess-duration-chip').forEach(c=>{c.classList.remove('active'); c.setAttribute('aria-pressed','false');});
       chip.classList.add('active');
+      chip.setAttribute('aria-pressed','true');
       assessDuration = chip.dataset.key;
     });
   });
@@ -2626,7 +2674,7 @@ function renderAssessmentRedFlags(){
   const container = document.getElementById('assessRedFlags');
   if(!container) return;
   container.innerHTML = ASSESS_RED_FLAGS.map(flag => `
-    <div class="redflag-item" data-key="${flag.key}">
+    <div class="redflag-item" data-key="${flag.key}" role="checkbox" tabindex="0" aria-checked="false">
       <div class="redflag-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>
       <div>${flag.label}</div>
     </div>
@@ -2635,6 +2683,7 @@ function renderAssessmentRedFlags(){
     item.addEventListener('click', ()=>{
       const key = item.dataset.key;
       const isChecked = item.classList.toggle('checked');
+      item.setAttribute('aria-checked', String(isChecked));
       assessRedFlagsChecked[key] = isChecked;
     });
   });
@@ -2765,6 +2814,24 @@ function renderHero(){
   document.getElementById('heroSvg').innerHTML = renderCurveSVG(pts, pts.map(p=>[p[0],p[1]+5]), 280, 320);
 }
 renderHero();
+
+/* ============================================================
+   KEYBOARD ACCESSIBILITY
+   Many interactive controls (mode cards, pills, chips, swatches) are
+   styled <div>s rather than <button>s. This delegates Enter/Space to
+   a .click() on any focused element carrying role="button"/"checkbox",
+   so keyboard and screen-reader users can activate them too.
+   ============================================================ */
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const el = document.activeElement;
+  if(!el) return;
+  const role = el.getAttribute('role');
+  if(role === 'button' || role === 'checkbox'){
+    e.preventDefault();
+    el.click();
+  }
+});
 </script>
 </body>
 </html>
