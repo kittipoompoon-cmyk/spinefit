@@ -2295,6 +2295,15 @@ function build3DModelImpl(spinePts, backPts, method){
   const NW = 2;    // width segments (just left/right edge + middle)
   const NR = 12;   // edge rounding segments
 
+  // Mirror only the backrest's S-curve left/right (reflected around its own
+  // base value at y=0) so the lumbar bulge points the other way in the
+  // viewer, while the seat — which anchors off profile[0].zFront, invariant
+  // under this reflection — keeps its original orientation untouched.
+  const basePivotZ = Math.max(2.5, backFn(0));
+  function mirroredZFront(y){
+    return 2*basePivotZ - Math.max(2.5, backFn(y));
+  }
+
   const colorHex = BACKREST_COLORS[currentBackrestColor].hex;
   const mat = new THREE.MeshStandardMaterial({
     color:colorHex, roughness:0.78, metalness:0.02, side:THREE.DoubleSide
@@ -2307,7 +2316,7 @@ function build3DModelImpl(spinePts, backPts, method){
   const profile = [];
   for(let i=0; i<NH; i++){
     const y = yMax*(i/(NH-1));
-    profile.push({ y, zFront: Math.max(2.5, backFn(y)) });
+    profile.push({ y, zFront: mirroredZFront(y) });
   }
 
   const group = new THREE.Group();
@@ -2471,7 +2480,7 @@ function build3DModelImpl(spinePts, backPts, method){
   {
     const pts3=[];
     for(let i=0; i<=56; i++){
-      const y=yMax*(i/56), zF=Math.max(2.5,backFn(y));
+      const y=yMax*(i/56), zF=mirroredZFront(y);
       pts3.push(new THREE.Vector3(0, y, zF+0.8+0.15)); // front face + bow(center)=0.8
     }
     const tube = new THREE.TubeGeometry(
@@ -2484,10 +2493,12 @@ function build3DModelImpl(spinePts, backPts, method){
   // 6b. LUMBAR APEX MARKER — golden ring at peak lumbar support position
   // ----------------------------------------------------------------
   {
-    // Find apex: height where backFn(y) is maximum
-    let apexY = 0, apexZFront = 0;
+    // Find apex: height where backFn(y) is maximum (the mirrored profile
+    // stores this as its minimum zFront, since mirroring turns the bulge
+    // into an indentation)
+    let apexY = 0, apexZFront = Infinity;
     for(let i=0;i<NH;i++){
-      if(profile[i].zFront > apexZFront){
+      if(profile[i].zFront < apexZFront){
         apexZFront = profile[i].zFront;
         apexY = profile[i].y;
       }
@@ -2588,7 +2599,8 @@ function build3DModelImpl(spinePts, backPts, method){
   // velocityY = inertia carried after mouse release
   let dragging    = false;
   let lastX = 0, lastY = 0;
-  let targetRotY  = 0,   currentRotY  = 0;
+  const BASE_ROT_Y = 0;
+  let targetRotY  = BASE_ROT_Y,   currentRotY  = BASE_ROT_Y;
   let targetRotX  = 0,   currentRotX  = 0;
   let velocityY   = 0;                       // inertia after release
   let targetDist  = camDist, currentDist = camDist;
@@ -2655,7 +2667,7 @@ function build3DModelImpl(spinePts, backPts, method){
     _getAutoSpin: ()=> autoSpin,
     _setAutoSpin: (v)=>{ autoSpin=v; if(v) velocityY=0; },
     _resetView: ()=>{
-      targetRotY=0; targetRotX=0; targetDist=camDist; velocityY=0;
+      targetRotY=BASE_ROT_Y; targetRotX=0; targetDist=camDist; velocityY=0;
     },
     updateCamera: updateView
   };
